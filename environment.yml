@@ -1,0 +1,15 @@
+name: utexascalendar
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - requests
+  - beautifulsoup4
+  - pytz
+  - pip
+  - pip:
+      - google-api-python-client
+      - google-auth
+      - google-auth-oauthlib
+      - google-auth-httplib2
