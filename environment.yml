@@ -1,12 +1,13 @@
-name: utexascalendar
+name: butler-calendar
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python==3.12
   - requests
   - beautifulsoup4
   - pytz
+  - pre-commit
   - pip
   - pip:
       - google-api-python-client
