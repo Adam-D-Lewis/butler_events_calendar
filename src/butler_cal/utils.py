@@ -86,18 +86,24 @@ def scrape_utexas_calendar():
                         end = start + datetime.timedelta(hours=1)
             else:
                 # If no datetime container found, check for other date indicators
-                date_div = link.find_parent("div", class_="views-row").find("div", class_="date-display-single")
-                if date_div:
-                    try:
-                        date_text = date_div.get_text(strip=True)
-                        date_obj = datetime.datetime.strptime(date_text, "%B %d, %Y")
-                        start = date_obj
-                        end = date_obj + datetime.timedelta(hours=1)
-                    except (ValueError, AttributeError):
+                parent_row = link.find_parent("div", class_="views-row")
+                if parent_row:
+                    date_div = parent_row.find("div", class_="date-display-single")
+                    if date_div:
+                        try:
+                            date_text = date_div.get_text(strip=True)
+                            date_obj = datetime.datetime.strptime(date_text, "%B %d, %Y")
+                            start = date_obj
+                            end = date_obj + datetime.timedelta(hours=1)
+                        except (ValueError, AttributeError):
+                            start = datetime.datetime.now()
+                            end = start + datetime.timedelta(hours=1)
+                    else:
+                        # Last resort fallback
                         start = datetime.datetime.now()
                         end = start + datetime.timedelta(hours=1)
                 else:
-                    # Last resort fallback
+                    # Last resort fallback if no parent row found
                     start = datetime.datetime.now()
                     end = start + datetime.timedelta(hours=1)
             # Extract location and map link details.
