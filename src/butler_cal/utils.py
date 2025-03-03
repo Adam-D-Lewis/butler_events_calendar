@@ -47,48 +47,48 @@ def scrape_utexas_calendar():
                 date_part, time_part = datetime_str.split(",", 1)
                 date_part = date_part.strip()
                 time_part = time_part.strip()
-                    # Use regex to extract start and end time tokens and the meridiem.
-                    import re
+                # Use regex to extract start and end time tokens and the meridiem.
+                import re
 
-                    m = re.search(
-                        r"(\d{1,2}(?::\d{2})?)\s*-\s*(\d{1,2}(?::\d{2})?)\s*(a\.m\.|p\.m\.)",
-                        time_part,
+                m = re.search(
+                    r"(\d{1,2}(?::\d{2})?)\s*-\s*(\d{1,2}(?::\d{2})?)\s*(a\.m\.|p\.m\.)",
+                    time_part,
+                )
+                if m:
+                    start_time_str, end_time_str, meridiem = m.groups()
+
+                    # Parse the date using the known format.
+                    base_date = datetime.datetime.strptime(date_part, "%B %d %Y")
+                    # Ensure the meridiem is applied – append it and parse the time.
+                    start_dt = datetime.datetime.strptime(
+                        f"{start_time_str} {meridiem}", "%I:%M %p"
+                        if ":" in start_time_str
+                        else "%I %p"
                     )
-                    if m:
-                        start_time_str, end_time_str, meridiem = m.groups()
-
-                        # Parse the date using the known format.
-                        base_date = datetime.datetime.strptime(date_part, "%B %d %Y")
-                        # Ensure the meridiem is applied – append it and parse the time.
-                        start_dt = datetime.datetime.strptime(
-                            f"{start_time_str} {meridiem}", "%I:%M %p"
-                            if ":" in start_time_str
-                            else "%I %p"
-                        )
-                        end_dt = datetime.datetime.strptime(
-                            f"{end_time_str} {meridiem}", "%I:%M %p"
-                            if ":" in end_time_str
-                            else "%I %p"
-                        )
-                        # Combine the base_date with the parsed time.
-                        start = datetime.datetime(
-                            base_date.year,
-                            base_date.month,
-                            base_date.day,
-                            start_dt.hour,
-                            start_dt.minute,
-                        )
-                        end = datetime.datetime(
-                            base_date.year,
-                            base_date.month,
-                            base_date.day,
-                            end_dt.hour,
-                            end_dt.minute,
-                        )
-                    else:
-                        # Fallback: if time format is not as expected, use dummy times.
-                        start = datetime.datetime.now()
-                        end = start + datetime.timedelta(hours=1)
+                    end_dt = datetime.datetime.strptime(
+                        f"{end_time_str} {meridiem}", "%I:%M %p"
+                        if ":" in end_time_str
+                        else "%I %p"
+                    )
+                    # Combine the base_date with the parsed time.
+                    start = datetime.datetime(
+                        base_date.year,
+                        base_date.month,
+                        base_date.day,
+                        start_dt.hour,
+                        start_dt.minute,
+                    )
+                    end = datetime.datetime(
+                        base_date.year,
+                        base_date.month,
+                        base_date.day,
+                        end_dt.hour,
+                        end_dt.minute,
+                    )
+                else:
+                    # Fallback: if time format is not as expected, use dummy times.
+                    start = datetime.datetime.now()
+                    end = start + datetime.timedelta(hours=1)
                 except Exception:
                     # On error, use dummy times.
                     start = datetime.datetime.now()
