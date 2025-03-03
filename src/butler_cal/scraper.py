@@ -24,16 +24,24 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
     soup = BeautifulSoup(response.text, 'html.parser')
     events = []
     
-    # Find all event items
-    event_items = soup.find_all('div', class_='views-row')
+    # Find all event items - in the example page, they're in cofaevent-row divs
+    event_items = soup.find_all('div', class_='cofaevent-row')
+    if not event_items:
+        # Fall back to the original selector if no cofaevent-row divs are found
+        event_items = soup.find_all('div', class_='views-row')
     
     for item in event_items:
         event = {}
         
-        # Get event title
+        # Get event title - in the example page, it's in a h2 with class field-content
         title_elem = item.find('h2', class_='field-content')
         if title_elem and title_elem.a:
             event['summary'] = title_elem.a.text.strip()
+        
+        # Get event long title/subtitle if available
+        subtitle_elem = item.find('h3', class_='field-content')
+        if subtitle_elem:
+            event['details'] = subtitle_elem.text.strip()
         
         # Get event date and time
         datetime_container = item.find('div', class_='views-field-field-cofaevent-datetime')
@@ -69,18 +77,28 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
             admission_info = admission_container.get_text(strip=True)
             event['admission_info'] = admission_info
         
+        # Get event status
+        status_container = item.find('div', class_='views-field-field-cofaevent-status')
+        if status_container:
+            status_item = status_container.find('div', class_='field__item')
+            if status_item:
+                event['status'] = status_item.text.strip()
+        
         # Check if event is streamable
         ticket_container = item.find('div', class_='views-field-field-cofaevent-ticket-button')
         if ticket_container:
             stream_button = ticket_container.find('a')
-            if stream_button and 'stream' in stream_button.get_text(strip=True).lower():
-                event['streamable'] = True
-                event['stream_link'] = stream_button.get('href', '')
-            else:
-                event['streamable'] = False
+            if stream_button:
+                if 'stream' in stream_button.get_text(strip=True).lower():
+                    event['streamable'] = True
+                    event['stream_link'] = stream_button.get('href', '')
+                else:
+                    event['ticket_link'] = stream_button.get('href', '')
         
         # Build description
         description_parts = []
+        if 'details' in event:
+            description_parts.append(event['details'])
         if 'admission_info' in event:
             description_parts.append(event['admission_info'])
         if event.get('streamable') and event.get('stream_link'):
@@ -88,7 +106,9 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
         
         event['description'] = "\n".join(description_parts)
         
-        events.append(event)
+        # Only add events with a title
+        if 'summary' in event:
+            events.append(event)
     
     return events
 

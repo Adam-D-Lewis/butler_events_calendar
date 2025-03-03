@@ -47,17 +47,28 @@ def test_scrape_butler_events(mock_get, mock_html):
     # Verify mock was called
     mock_get.assert_called_once_with("https://music.utexas.edu/events")
     
-    # For now, we'll just check that we can parse the structure
-    # In a real test with actual data, we'd verify the content
+    # Verify we got events
     assert isinstance(events, list)
+    assert len(events) > 0
     
-    # Since we're using the example page which might not have events,
-    # we'll just check the structure is correct
-    for event in events:
-        assert isinstance(event, dict)
-        # Check that keys are strings
-        for key in event:
-            assert isinstance(key, str)
+    # Check the first event (New Music Ensemble)
+    first_event = next((e for e in events if "New Music Ensemble" in e.get('summary', '')), None)
+    assert first_event is not None
+    assert first_event['summary'] == "New Music Ensemble"
+    assert "2025-03-03T19:30:00" in first_event['start']
+    assert "2025-03-03T21:00:00" in first_event['end']
+    assert "Bates Recital Hall" in first_event['location']
+    assert "Free admission" in first_event.get('admission_info', '')
+    
+    # Check the second event (Artem Kuznetsov, piano)
+    second_event = next((e for e in events if "Artem Kuznetsov, piano" in e.get('summary', '')), None)
+    assert second_event is not None
+    assert second_event['summary'] == "Artem Kuznetsov, piano"
+    assert "2025-03-04T15:00:00" in second_event['start']
+    assert "2025-03-04T16:00:00" in second_event['end']
+    assert "Bates Recital Hall" in second_event['location']
+    assert "Free admission" in second_event.get('admission_info', '')
+    assert "DMA Chamber Recital" in second_event.get('details', '')
 
 
 def test_first_event_details():
