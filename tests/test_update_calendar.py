@@ -34,7 +34,11 @@ def test_event_exists(mocker):
     # Dummy placeholders; adjust based on actual event structure.
     dummy_service = mocker.Mock()  # Mock the service to be used inside event_exists.
     dummy_calendar_id = "dummy-calendar"
-    dummy_event = {"id": "event123", "summary": "Test Event"}
+    dummy_event = {
+        "id": "event123",
+        "summary": "Test Event",
+        "start": "2023-10-01T10:00:00"
+    }
 
     # Assuming that for these dummy parameters, the event does not exist.
     exists = event_exists(dummy_service, dummy_calendar_id, dummy_event)
