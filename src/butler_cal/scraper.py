@@ -24,44 +24,81 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
     soup = BeautifulSoup(response.text, 'html.parser')
     events = []
     
-    # Find all event items - in the example page, they're in cofaevent-row divs
-    event_items = soup.find_all('div', class_='cofaevent-row')
-    if not event_items:
-        # Fall back to the original selector if no cofaevent-row divs are found
-        event_items = soup.find_all('div', class_='views-row')
+    # Try different possible event container classes
+    event_containers = []
     
-    for item in event_items:
+    # First try cofaevent-row divs (seen in some pages)
+    event_items = soup.find_all('div', class_='cofaevent-row')
+    if event_items:
+        event_containers.extend(event_items)
+    
+    # Also try views-row divs (seen in page_example.html)
+    event_items = soup.find_all('div', class_='views-row')
+    if event_items:
+        event_containers.extend(event_items)
+    
+    # Process each event container
+    for container in event_containers:
         event = {}
         
-        # Get event title - in the example page, it's in a h2 with class field-content
-        title_elem = item.find('h2', class_='field-content')
+        # Get event status if available
+        status_container = container.find('div', class_='views-field-field-cofaevent-status')
+        if status_container:
+            status_item = status_container.find('div', class_='field__item')
+            if status_item:
+                event['status'] = status_item.text.strip()
+        
+        # Get event title - try different possible locations
+        title_elem = container.find('h2', class_='field-content')
         if title_elem and title_elem.a:
             event['summary'] = title_elem.a.text.strip()
+            event['url'] = title_elem.a.get('href', '')
+            if event['url'] and not event['url'].startswith('http'):
+                event['url'] = f"https://music.utexas.edu{event['url']}"
         
         # Get event long title/subtitle if available
-        subtitle_elem = item.find('h3', class_='field-content')
+        subtitle_elem = container.find('h3', class_='field-content')
         if subtitle_elem:
             event['details'] = subtitle_elem.text.strip()
         
         # Get event date and time
-        datetime_container = item.find('div', class_='views-field-field-cofaevent-datetime')
+        datetime_container = container.find('div', class_='views-field-field-cofaevent-datetime')
         if datetime_container:
             time_tags = datetime_container.find_all('time')
             if len(time_tags) >= 2:
                 # If we have both start and end time tags
-                start = datetime.fromisoformat(time_tags[0]["datetime"])
-                end = datetime.fromisoformat(time_tags[1]["datetime"])
-                event['start'] = start.isoformat()
-                event['end'] = end.isoformat()
+                try:
+                    start = datetime.fromisoformat(time_tags[0]["datetime"])
+                    end = datetime.fromisoformat(time_tags[1]["datetime"])
+                    event['start'] = start.isoformat()
+                    event['end'] = end.isoformat()
+                    
+                    # Also extract the human-readable date/time for display
+                    date_text = time_tags[0].text.strip()
+                    if date_text:
+                        event['date_display'] = date_text
+                except (KeyError, ValueError) as e:
+                    # If datetime attribute is missing or invalid, try to parse from text
+                    date_text = datetime_container.get_text(strip=True)
+                    event['date_display'] = date_text
             elif len(time_tags) == 1:
                 # If we only have start time, set end time to 1 hour later
-                start = datetime.fromisoformat(time_tags[0]["datetime"])
-                end = start.replace(hour=start.hour + 1)
-                event['start'] = start.isoformat()
-                event['end'] = end.isoformat()
+                try:
+                    start = datetime.fromisoformat(time_tags[0]["datetime"])
+                    end = start.replace(hour=start.hour + 1)
+                    event['start'] = start.isoformat()
+                    event['end'] = end.isoformat()
+                    event['date_display'] = time_tags[0].text.strip()
+                except (KeyError, ValueError):
+                    date_text = datetime_container.get_text(strip=True)
+                    event['date_display'] = date_text
+            else:
+                # If no time tags, try to parse the text content
+                date_text = datetime_container.get_text(strip=True)
+                event['date_display'] = date_text
         
         # Get event location
-        location_container = item.find('div', class_='views-field-field-cofaevent-location-name')
+        location_container = container.find('div', class_='views-field-field-cofaevent-location-name')
         if location_container:
             location_text = location_container.get_text(strip=True)
             event['location'] = location_text
@@ -70,30 +107,47 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
             map_link = location_container.find('a', href=True)
             if map_link and 'map' in map_link.get_text(strip=True).lower():
                 event['map_link'] = map_link['href']
+            elif map_link and map_link.get('href'):
+                # Sometimes the location itself is a link
+                event['map_link'] = map_link['href']
+            
+            # If we have a link but no text, extract text from the link
+            if not location_text and map_link:
+                event['location'] = map_link.get_text(strip=True)
         
         # Get admission information
-        admission_container = item.find('div', class_='views-field-field-cofaevent-admission-range')
+        admission_container = container.find('div', class_='views-field-field-cofaevent-admission-range')
         if admission_container:
             admission_info = admission_container.get_text(strip=True)
             event['admission_info'] = admission_info
         
-        # Get event status
-        status_container = item.find('div', class_='views-field-field-cofaevent-status')
-        if status_container:
-            status_item = status_container.find('div', class_='field__item')
-            if status_item:
-                event['status'] = status_item.text.strip()
-        
-        # Check if event is streamable
-        ticket_container = item.find('div', class_='views-field-field-cofaevent-ticket-button')
+        # Check if event is streamable or has ticket link
+        ticket_container = container.find('div', class_='views-field-field-cofaevent-ticket-button')
         if ticket_container:
-            stream_button = ticket_container.find('a')
-            if stream_button:
-                if 'stream' in stream_button.get_text(strip=True).lower():
+            button = ticket_container.find('a')
+            if button:
+                button_text = button.get_text(strip=True).lower()
+                button_url = button.get('href', '')
+                
+                if 'stream' in button_text:
                     event['streamable'] = True
-                    event['stream_link'] = stream_button.get('href', '')
+                    event['stream_link'] = button_url
+                elif 'ticket' in button_text or 'buy' in button_text:
+                    event['ticket_link'] = button_url
                 else:
-                    event['ticket_link'] = stream_button.get('href', '')
+                    # Generic button
+                    event['action_link'] = button_url
+                    event['action_text'] = button.get_text(strip=True)
+        
+        # Get event details/description if available
+        details_container = container.find('div', class_='views-field-field-cofaevent-details')
+        if details_container:
+            details_text = details_container.get_text(strip=True)
+            if details_text:
+                if 'details' not in event:
+                    event['details'] = details_text
+                else:
+                    event['details'] += f" - {details_text}"
         
         # Build description
         description_parts = []
@@ -103,6 +157,8 @@ def scrape_butler_events(url="https://music.utexas.edu/events"):
             description_parts.append(event['admission_info'])
         if event.get('streamable') and event.get('stream_link'):
             description_parts.append(f"Stream available at: {event['stream_link']}")
+        if 'status' in event and event['status'].lower() != 'scheduled':
+            description_parts.append(f"Status: {event['status']}")
         
         event['description'] = "\n".join(description_parts)
         
