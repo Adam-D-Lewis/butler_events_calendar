@@ -38,19 +38,52 @@ def scrape_utexas_calendar():
 
         for link in event_links:
             event_title = link.get_text(strip=True)
-            # NEW: Extract datetime details using the datetime container.
-            datetime_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-datetime")
+            # Extract datetime details using the datetime container
+            datetime_container = link.find_parent("div", class_="views-row").find("div", class_="views-field-field-cofaevent-datetime")
             if datetime_container:
+                # Try to find time tags which contain the ISO datetime
                 time_tags = datetime_container.find_all("time")
                 if len(time_tags) >= 2:
+                    # If we have both start and end time tags
                     start = datetime.datetime.fromisoformat(time_tags[0]["datetime"])
                     end = datetime.datetime.fromisoformat(time_tags[1]["datetime"])
+                elif len(time_tags) == 1:
+                    # If we only have start time, set end time to 1 hour later
+                    start = datetime.datetime.fromisoformat(time_tags[0]["datetime"])
+                    end = start + datetime.timedelta(hours=1)
                 else:
+                    # If no time tags, try to parse the text content
+                    date_text = datetime_container.get_text(strip=True)
+                    try:
+                        # Try different date formats that might be on the page
+                        for fmt in ["%B %d, %Y", "%A, %B %d, %Y", "%m/%d/%Y"]:
+                            try:
+                                date_obj = datetime.datetime.strptime(date_text, fmt)
+                                start = date_obj
+                                end = date_obj + datetime.timedelta(hours=1)
+                                break
+                            except ValueError:
+                                continue
+                    except Exception:
+                        # Fallback to current time if parsing fails
+                        start = datetime.datetime.now()
+                        end = start + datetime.timedelta(hours=1)
+            else:
+                # If no datetime container found, check for other date indicators
+                date_div = link.find_parent("div", class_="views-row").find("div", class_="date-display-single")
+                if date_div:
+                    try:
+                        date_text = date_div.get_text(strip=True)
+                        date_obj = datetime.datetime.strptime(date_text, "%B %d, %Y")
+                        start = date_obj
+                        end = date_obj + datetime.timedelta(hours=1)
+                    except (ValueError, AttributeError):
+                        start = datetime.datetime.now()
+                        end = start + datetime.timedelta(hours=1)
+                else:
+                    # Last resort fallback
                     start = datetime.datetime.now()
                     end = start + datetime.timedelta(hours=1)
-            else:
-                start = datetime.datetime.now()
-                end = start + datetime.timedelta(hours=1)
             # NEW: Extract location and map link details.
             location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location")
             if location_container:
