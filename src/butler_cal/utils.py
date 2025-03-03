@@ -89,10 +89,10 @@ def scrape_utexas_calendar():
                     # Fallback: if time format is not as expected, use dummy times.
                     start = datetime.datetime.now()
                     end = start + datetime.timedelta(hours=1)
-                except Exception:
-                    # On error, use dummy times.
-                    start = datetime.datetime.now()
-                    end = start + datetime.timedelta(hours=1)
+            except Exception:
+                # On error, use dummy times.
+                start = datetime.datetime.now()
+                end = start + datetime.timedelta(hours=1)
             else:
                 # If no datetime info, use dummy times.
                 start = datetime.datetime.now()
