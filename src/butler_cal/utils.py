@@ -38,65 +38,40 @@ def scrape_utexas_calendar():
 
         for link in event_links:
             event_title = link.get_text(strip=True)
-            # Assume the datetime details (like "March 3, 2025, 7:30 - 9 p.m.") are in the next sibling element.
-            datetime_sibling = link.find_parent("h2").find_next_sibling()
-            datetime_str = datetime_sibling.get_text(strip=True) if datetime_sibling else ""
-            # Expected format: "March 7, 2025, 6 - 7 p.m." (or similar)
-            # Split into date and time parts.
-            try:
-                date_part, time_part = datetime_str.split(",", 1)
-                date_part = date_part.strip()
-                time_part = time_part.strip()
-                # Use regex to extract start and end time tokens and the meridiem.
-                import re
-
-                m = re.search(
-                    r"(\d{1,2}(?::\d{2})?)\s*-\s*(\d{1,2}(?::\d{2})?)\s*(a\.m\.|p\.m\.)",
-                    time_part,
-                )
-                if m:
-                    start_time_str, end_time_str, meridiem = m.groups()
-
-                    # Parse the date using the known format.
-                    base_date = datetime.datetime.strptime(date_part, "%B %d %Y")
-                    # Ensure the meridiem is applied – append it and parse the time.
-                    start_dt = datetime.datetime.strptime(
-                        f"{start_time_str} {meridiem}", "%I:%M %p"
-                        if ":" in start_time_str
-                        else "%I %p"
-                    )
-                    end_dt = datetime.datetime.strptime(
-                        f"{end_time_str} {meridiem}", "%I:%M %p"
-                        if ":" in end_time_str
-                        else "%I %p"
-                    )
-                    # Combine the base_date with the parsed time.
-                    start = datetime.datetime(
-                        base_date.year,
-                        base_date.month,
-                        base_date.day,
-                        start_dt.hour,
-                        start_dt.minute,
-                    )
-                    end = datetime.datetime(
-                        base_date.year,
-                        base_date.month,
-                        base_date.day,
-                        end_dt.hour,
-                        end_dt.minute,
-                    )
+            # NEW: Extract datetime details using the datetime container.
+            datetime_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-datetime")
+            if datetime_container:
+                time_tags = datetime_container.find_all("time")
+                if len(time_tags) >= 2:
+                    start = datetime.datetime.fromisoformat(time_tags[0]["datetime"])
+                    end = datetime.datetime.fromisoformat(time_tags[1]["datetime"])
                 else:
-                    # Fallback: if time format is not as expected, use dummy times.
                     start = datetime.datetime.now()
                     end = start + datetime.timedelta(hours=1)
-            except Exception:
-                # On error, use dummy times.
-                start = datetime.datetime.now()
-                end = start + datetime.timedelta(hours=1)
             else:
-                # If no datetime info, use dummy times.
                 start = datetime.datetime.now()
                 end = start + datetime.timedelta(hours=1)
+            # NEW: Extract location and map link details.
+            location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location")
+            if location_container:
+                a_tags = location_container.find_all("a")
+                location = a_tags[0].get_text(strip=True) if a_tags else ""
+                map_link = ""
+                for a in a_tags:
+                    if "map" in a.get_text(strip=True).lower():
+                        map_link = a.get("href")
+                        break
+            else:
+                location = ""
+                map_link = ""
+
+            # NEW: Determine whether the event is streamable.
+            ticket_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-ticket-button")
+            streamable = False
+            if ticket_container:
+                stream_button = ticket_container.find("a")
+                if stream_button and "stream" in stream_button.get_text(strip=True).lower():
+                    streamable = True
 
             events.append(
                 {
@@ -104,6 +79,9 @@ def scrape_utexas_calendar():
                     "start": start.isoformat(),
                     "end": end.isoformat(),
                     "description": "",
+                    "location": location,    # NEW detail
+                    "map_link": map_link,    # NEW detail
+                    "streamable": streamable # NEW detail
                 }
             )
         page += 1
