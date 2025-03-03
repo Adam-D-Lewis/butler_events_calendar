@@ -17,8 +17,8 @@ def test_get_google_calendar_service(mocker):
 
     service = get_google_calendar_service()
     assert (
-        service == dummy_service
-    ), "The google calendar service should match the dummy service"
+        service == dummy_credentials.authorize.return_value
+    ), "The google calendar service should match the authorized dummy object"
 
 
 def test_scrape_utexas_calendar():
@@ -29,6 +29,7 @@ def test_scrape_utexas_calendar():
 def test_event_exists(mocker):
     # Dummy placeholders; adjust based on actual event structure.
     dummy_service = mocker.Mock()  # Mock the service to be used inside event_exists.
+    dummy_service.events.return_value.list.return_value.execute.return_value = {"items": []}
     dummy_calendar_id = "dummy-calendar"
     dummy_event = {
         "id": "event123",
