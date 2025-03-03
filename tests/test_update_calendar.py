@@ -8,11 +8,11 @@ from butler_cal.utils import (
 
 def test_get_google_calendar_service(mocker):
     # Create a dummy service object you expect to be returned.
-    dummy_service = object()
-    # Replace the actual external dependency; adjust the path to the dependency as needed.
+    dummy_credentials = mocker.Mock()
+    dummy_credentials.authorize.return_value = object()  # dummy authorized http client
     mocker.patch(
         "butler_cal.utils.service_account.Credentials.from_service_account_file",
-        return_value=dummy_service,
+        return_value=dummy_credentials,
     )
 
     service = get_google_calendar_service()
