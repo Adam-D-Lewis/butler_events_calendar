@@ -38,8 +38,24 @@ def scrape_utexas_calendar():
 
         for link in event_links:
             event_title = link.get_text(strip=True)
+            
+            # Find the parent container that holds all event information
+            # Try different possible parent elements since the structure might vary
+            parent_container = None
+            for parent_class in ["views-row", "event-item", "event-container"]:
+                parent = link.find_parent("div", class_=parent_class)
+                if parent:
+                    parent_container = parent
+                    break
+                    
+            # If we still don't have a parent, try the h2 parent as fallback
+            if not parent_container:
+                parent_container = link.find_parent("h2")
+                
             # Extract datetime details using the datetime container
-            datetime_container = link.find_parent("div", class_="views-row").find("div", class_="views-field-field-cofaevent-datetime")
+            datetime_container = None
+            if parent_container:
+                datetime_container = parent_container.find("div", class_="views-field-field-cofaevent-datetime")
             if datetime_container:
                 # Try to find time tags which contain the ISO datetime
                 time_tags = datetime_container.find_all("time")
@@ -84,8 +100,14 @@ def scrape_utexas_calendar():
                     # Last resort fallback
                     start = datetime.datetime.now()
                     end = start + datetime.timedelta(hours=1)
-            # NEW: Extract location and map link details.
-            location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location")
+            # Extract location and map link details.
+            location_container = None
+            if parent_container:
+                location_container = parent_container.find("div", class_="views-field-field-cofaevent-location")
+            
+            # If not found, try the old method as fallback
+            if not location_container and link.find_parent("h2"):
+                location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location")
             if location_container:
                 a_tags = location_container.find_all("a")
                 location = a_tags[0].get_text(strip=True) if a_tags else ""
@@ -98,8 +120,14 @@ def scrape_utexas_calendar():
                 location = ""
                 map_link = ""
 
-            # NEW: Determine whether the event is streamable.
-            ticket_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-ticket-button")
+            # Determine whether the event is streamable.
+            ticket_container = None
+            if parent_container:
+                ticket_container = parent_container.find("div", class_="views-field-field-cofaevent-ticket-button")
+            
+            # If not found, try the old method as fallback
+            if not ticket_container and link.find_parent("h2"):
+                ticket_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-ticket-button")
             streamable = False
             if ticket_container:
                 stream_button = ticket_container.find("a")
