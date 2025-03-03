@@ -103,24 +103,36 @@ def scrape_utexas_calendar():
             # Extract location and map link details.
             location_container = None
             if parent_container:
-                location_container = parent_container.find("div", class_="views-field-field-cofaevent-location")
+                location_container = parent_container.find("div", class_="views-field-field-cofaevent-location-name")
             
             # If not found, try the old method as fallback
             if not location_container and link.find_parent("h2"):
-                location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location")
+                location_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-location-name")
+            
+            location = ""
+            map_link = ""
             if location_container:
                 a_tags = location_container.find_all("a")
                 location = a_tags[0].get_text(strip=True) if a_tags else ""
-                map_link = ""
                 for a in a_tags:
                     if "map" in a.get_text(strip=True).lower():
                         map_link = a.get("href")
                         break
-            else:
-                location = ""
-                map_link = ""
-
-            # Determine whether the event is streamable.
+            
+            # Extract admission information
+            admission_container = None
+            if parent_container:
+                admission_container = parent_container.find("div", class_="views-field-field-cofaevent-admission-range")
+            
+            # If not found, try the old method as fallback
+            if not admission_container and link.find_parent("h2"):
+                admission_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-admission-range")
+            
+            admission_info = ""
+            if admission_container:
+                admission_info = admission_container.get_text(strip=True)
+            
+            # Determine whether the event is streamable and get stream link
             ticket_container = None
             if parent_container:
                 ticket_container = parent_container.find("div", class_="views-field-field-cofaevent-ticket-button")
@@ -128,21 +140,35 @@ def scrape_utexas_calendar():
             # If not found, try the old method as fallback
             if not ticket_container and link.find_parent("h2"):
                 ticket_container = link.find_parent("h2").find_next_sibling("div", class_="views-field-field-cofaevent-ticket-button")
+            
             streamable = False
+            stream_link = ""
             if ticket_container:
                 stream_button = ticket_container.find("a")
                 if stream_button and "stream" in stream_button.get_text(strip=True).lower():
                     streamable = True
+                    stream_link = stream_button.get("href", "")
 
+            # Build a more detailed description
+            description_parts = []
+            if admission_info:
+                description_parts.append(admission_info)
+            if streamable and stream_link:
+                description_parts.append(f"Stream available at: {stream_link}")
+            
+            description = "\n".join(description_parts)
+            
             events.append(
                 {
                     "summary": event_title,
                     "start": start.isoformat(),
                     "end": end.isoformat(),
-                    "description": "",
-                    "location": location,    # NEW detail
-                    "map_link": map_link,    # NEW detail
-                    "streamable": streamable # NEW detail
+                    "description": description,
+                    "location": location,
+                    "map_link": map_link,
+                    "streamable": streamable,
+                    "stream_link": stream_link,
+                    "admission_info": admission_info
                 }
             )
         page += 1
