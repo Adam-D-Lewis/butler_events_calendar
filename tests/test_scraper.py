@@ -2,6 +2,7 @@
 Tests for the Butler School of Music events scraper.
 """
 import pytest
+from datetime import datetime
 from unittest.mock import patch, MagicMock
 from bs4 import BeautifulSoup
 from butler_cal.scraper import scrape_butler_events, parse_event_datetime
