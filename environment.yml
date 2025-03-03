@@ -7,8 +7,10 @@ dependencies:
   - requests
   - beautifulsoup4
   - pytz
-  - pre-commit
   - pip
+  # dev
+  - pre-commit
+  - pytest
   - pip:
       - google-api-python-client
       - google-auth
