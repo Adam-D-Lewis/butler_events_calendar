@@ -10,7 +10,7 @@ def test_get_google_calendar_service(mocker):
     dummy_service = object()
     # Replace the actual external dependency; adjust the path to the dependency as needed.
     mocker.patch(
-        "butler_cal.update_calendar.some_google_auth_dependency",
+        "butler_cal.utils.service_account.Credentials.from_service_account_file",
         return_value=dummy_service,
     )
 
@@ -27,7 +27,7 @@ def test_scrape_utexas_calendar():
 
 def test_event_exists():
     # Dummy placeholders; adjust based on actual event structure.
-    dummy_service = None  # If the service is not used inside event_exists, otherwise provide a mock.
+    dummy_service = mocker.Mock()  # Mock the service to be used inside event_exists.
     dummy_calendar_id = "dummy-calendar"
     dummy_event = {"id": "event123", "summary": "Test Event"}
 
