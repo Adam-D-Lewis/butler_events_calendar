@@ -1,4 +1,3 @@
-import pytest
 from butler_cal.utils import (
     event_exists,
     get_google_calendar_service,
@@ -29,12 +28,14 @@ def test_scrape_utexas_calendar():
 def test_event_exists(mocker):
     # Dummy placeholders; adjust based on actual event structure.
     dummy_service = mocker.Mock()  # Mock the service to be used inside event_exists.
-    dummy_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+    dummy_service.events.return_value.list.return_value.execute.return_value = {
+        "items": []
+    }
     dummy_calendar_id = "dummy-calendar"
     dummy_event = {
         "id": "event123",
         "summary": "Test Event",
-        "start": "2023-10-01T10:00:00"
+        "start": "2023-10-01T10:00:00",
     }
 
     # Assuming that for these dummy parameters, the event does not exist.

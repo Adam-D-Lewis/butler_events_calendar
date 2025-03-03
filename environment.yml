@@ -11,6 +11,7 @@ dependencies:
   # dev
   - pre-commit
   - pytest
+  - pytest-mock
   - pip:
       - google-api-python-client
       - google-auth
