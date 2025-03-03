@@ -26,10 +26,6 @@ def test_scrape_utexas_calendar():
     assert isinstance(events, list), "Expected events to be returned as a list"
 
 
-@pytest.fixture
-def mocker(mocker):
-    return mocker
-
 def test_event_exists(mocker):
     # Dummy placeholders; adjust based on actual event structure.
     dummy_service = mocker.Mock()  # Mock the service to be used inside event_exists.
