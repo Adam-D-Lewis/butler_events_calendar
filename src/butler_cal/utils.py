@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from butler_cal.scraper import scrape_butler_events
 
 
 def get_google_calendar_service():
