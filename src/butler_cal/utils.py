@@ -32,16 +32,15 @@ def scrape_utexas_calendar():
 
         # Select event links that are inside h2 tags.
         # This selector ensures we only grab event items (e.g. "/events/4923-jaime-garcia-percussion")
-        event_links = soup.select("h2 a[href^='/events/']")
+        event_links = soup.select("h2.field-content.ut-headline a[href^='/events/']")
         if not event_links:
             break  # exit loop if no events are found on this page
 
         for link in event_links:
             event_title = link.get_text(strip=True)
-            # Assume the datetime string is in the next sibling of the h2 tag.
-            datetime_str = link.find_parent("h2").find_next_sibling(text=True)
-            if datetime_str:
-                datetime_str = datetime_str.strip()
+            # Assume the datetime details (like "March 3, 2025, 7:30 - 9 p.m.") are in the next sibling element.
+            datetime_sibling = link.find_parent("h2").find_next_sibling()
+            datetime_str = datetime_sibling.get_text(strip=True) if datetime_sibling else ""
                 # Expected format: "March 7, 2025, 6 - 7 p.m." (or similar)
                 # Split into date and time parts.
                 try:
@@ -109,23 +108,6 @@ def scrape_utexas_calendar():
             )
         page += 1
 
-    events = []
-    # Inspect the HTML and adapt selectors; for example, if events are in <a> tags:
-    for a in soup.select('a[href*="/events"]'):
-        event_title = a.get_text(strip=True)
-        # event_link = a["href"]
-        # You may need to follow event_link to extract date/time detail.
-        # For now, add dummy date and description.
-        event_date = datetime.datetime.now()  # TODO: replace with parsed event date
-        event_description = ""
-        events.append(
-            {
-                "summary": event_title,
-                "start": event_date.isoformat(),
-                "end": (event_date + datetime.timedelta(hours=1)).isoformat(),
-                "description": event_description,
-            }
-        )
     return events
 
 
