@@ -41,12 +41,12 @@ def scrape_utexas_calendar():
             # Assume the datetime details (like "March 3, 2025, 7:30 - 9 p.m.") are in the next sibling element.
             datetime_sibling = link.find_parent("h2").find_next_sibling()
             datetime_str = datetime_sibling.get_text(strip=True) if datetime_sibling else ""
-                # Expected format: "March 7, 2025, 6 - 7 p.m." (or similar)
-                # Split into date and time parts.
-                try:
-                    date_part, time_part = datetime_str.split(",", 1)
-                    date_part = date_part.strip()
-                    time_part = time_part.strip()
+            # Expected format: "March 7, 2025, 6 - 7 p.m." (or similar)
+            # Split into date and time parts.
+            try:
+                date_part, time_part = datetime_str.split(",", 1)
+                date_part = date_part.strip()
+                time_part = time_part.strip()
                     # Use regex to extract start and end time tokens and the meridiem.
                     import re
 
