@@ -16,8 +16,12 @@ update-calendar
 
 Ensure you have set up your Google Calendar API credentials correctly.
 
-# Todo:
-- Make aider run tests after each iteration
-- make aider add some tests
-- see what events it gets from the butler calendar before I add google credentials
-- add google credentials and try out the thing
+
+## Setup
+
+- Set up a GCP project
+- Enable Google Calendar API in project
+- Create a service account in the project.
+- Create service account credentials in GCP (json file)
+- Share target calendar with service account email address
+- run script regularly

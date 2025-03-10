@@ -1,6 +1,6 @@
 [project]
 name = "butler-cal"
-version = "0.1.0"
+version = "0.5.0"
 description = "Scrape UT Calendar and update Google Calendar"
 authors = [
   { name = "Your Name", email = "you@example.com" }

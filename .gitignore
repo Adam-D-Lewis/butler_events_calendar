@@ -62,3 +62,4 @@ _test_deploy
 
 # ignore downloaded helm charts
 **/template/charts
+butler-calendar-452702-e1335e356afc.json

@@ -1,3 +1,5 @@
+import os
+
 from butler_cal.utils import (
     event_exists,
     get_google_calendar_service,
@@ -8,7 +10,8 @@ from butler_cal.utils import (
 def main():
     # Prepare Google Calendar service and calendar ID.
     service = get_google_calendar_service()
-    calendar_id = "your_calendar_id@group.calendar.google.com"
+
+    calendar_id = os.environ["CALENDAR_ID"]
 
     events = scrape_utexas_calendar()
     for event in events:
@@ -31,4 +34,6 @@ def main():
 
 
 if __name__ == "__main__":
+    # events = scrape_utexas_calendar()
+    # breakpoint()
     main()
