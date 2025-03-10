@@ -3,7 +3,7 @@ name = "butler-cal"
 version = "0.5.0"
 description = "Scrape UT Calendar and update Google Calendar"
 authors = [
-  { name = "Your Name", email = "you@example.com" }
+  { name = "Adam Lewis" }
 ]
 readme = "README.md"
 requires-python = ">=3.9"
