@@ -1,6 +1,6 @@
 import os
 
-from butler_cal.utils import (
+from butler_cal.gcal import (
     event_exists,
     get_google_calendar_service,
     scrape_utexas_calendar,
