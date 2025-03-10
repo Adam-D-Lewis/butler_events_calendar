@@ -1,23 +1,59 @@
 import datetime
 import os
 
-import requests
-from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from butler_cal.scraper import scrape_butler_events
 
 
 def get_google_calendar_service():
+    """Get an authorized Google Calendar API service instance using service account."""
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
-    SERVICE_ACCOUNT_FILE = os.environ["SA_CREDENTIALS_PATH"]
+    
+    # Use environment variable if available, otherwise fall back to the file path in gcal.py
+    service_account_file = os.environ.get("SA_CREDENTIALS_PATH", 'butler-calendar-452702-e1335e356afc.json')
     
     credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        service_account_file, scopes=SCOPES
     )
     service = build("calendar", "v3", credentials=credentials)
     return service
 
+
+def create_calendar_event(service, calendar_id, summary, location, description, start_datetime, end_datetime, timezone='America/Chicago'):
+    """
+    Create a new event in Google Calendar.
+    
+    Args:
+        service: Google Calendar API service instance
+        calendar_id: ID of the calendar to add the event to
+        summary: Event title/summary
+        location: Event location
+        description: Event description
+        start_datetime: Start datetime object
+        end_datetime: End datetime object
+        timezone: Timezone string (default: 'America/Chicago' for Austin, TX)
+        
+    Returns:
+        Created event object
+    """
+    event = {
+        'summary': summary,
+        'location': location,
+        'description': description,
+        'start': {
+            'dateTime': start_datetime.isoformat(),
+            'timeZone': timezone,
+        },
+        'end': {
+            'dateTime': end_datetime.isoformat(),
+            'timeZone': timezone,
+        },
+    }
+
+    event = service.events().insert(calendarId=calendar_id, body=event).execute()
+    print(f'Event created: {event.get("htmlLink")}')
+    return event
 
 def scrape_utexas_calendar():
     """
@@ -56,8 +92,31 @@ def scrape_utexas_calendar():
 
 
 def event_exists(service, calendar_id, event):
-    # Create a time window query using the event start time.
-    event_start = datetime.datetime.fromisoformat(event["start"])
+    """
+    Check if an event already exists in the calendar.
+    
+    Args:
+        service: Google Calendar API service instance
+        calendar_id: ID of the calendar to check
+        event: Event dictionary with 'summary' and either:
+               - 'start' as ISO format string, or
+               - 'start' as a dictionary with 'dateTime' key
+    
+    Returns:
+        Boolean indicating if the event exists
+    """
+    # Handle different event formats
+    if isinstance(event.get("start"), dict):
+        # Format from gcal.py
+        event_start_str = event["start"].get("dateTime")
+    else:
+        # Format from scraper
+        event_start_str = event.get("start")
+    
+    # Parse the datetime
+    event_start = datetime.datetime.fromisoformat(event_start_str.replace('Z', ''))
+    
+    # Create a time window query
     time_min = (event_start - datetime.timedelta(minutes=1)).isoformat() + "Z"
     time_max = (event_start + datetime.timedelta(minutes=1)).isoformat() + "Z"
 
