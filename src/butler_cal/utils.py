@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,9 +10,8 @@ from butler_cal.scraper import scrape_butler_events
 
 def get_google_calendar_service():
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
-    SERVICE_ACCOUNT_FILE = (
-        "path/to/service-account.json"  # TODO: replace with your service account file
-    )
+    SERVICE_ACCOUNT_FILE = os.environ["SA_CREDENTIALS_PATH"]
+    
     credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES
     )
