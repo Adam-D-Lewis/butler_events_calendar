@@ -27,11 +27,11 @@ def create_event(service, summary, location, description, start_datetime, end_da
         'description': description,
         'start': {
             'dateTime': start_datetime.isoformat(),
-            'timeZone': 'America/New_York',  # Adjust as needed
+            'timeZone': 'America/Chicago',  # Updated to match utils.py
         },
         'end': {
             'dateTime': end_datetime.isoformat(),
-            'timeZone': 'America/New_York',  # Adjust as needed
+            'timeZone': 'America/Chicago',  # Updated to match utils.py
         },
     }
 

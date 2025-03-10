@@ -91,7 +91,21 @@ def scrape_utexas_calendar():
     return events
 
 
-def event_exists(service, calendar_id, event):
+def debug_event_format(event, prefix="Event"):
+    """Debug helper to print event format details"""
+    print(f"{prefix} summary: {event.get('summary')}")
+    
+    if isinstance(event.get("start"), dict):
+        start_time = event["start"].get("dateTime")
+        print(f"{prefix} start (dict): {start_time}")
+    else:
+        start_time = event.get("start")
+        print(f"{prefix} start (direct): {start_time}")
+    
+    print(f"{prefix} type: {type(event.get('start'))}")
+    return start_time
+
+def event_exists(service, calendar_id, event, debug=False):
     """
     Check if an event already exists in the calendar.
     
@@ -106,19 +120,28 @@ def event_exists(service, calendar_id, event):
         Boolean indicating if the event exists
     """
     # Handle different event formats
-    if isinstance(event.get("start"), dict):
-        # Format from gcal.py
-        event_start_str = event["start"].get("dateTime")
+    if debug:
+        event_start_str = debug_event_format(event)
     else:
-        # Format from scraper
-        event_start_str = event.get("start")
+        if isinstance(event.get("start"), dict):
+            # Format from gcal.py
+            event_start_str = event["start"].get("dateTime")
+        else:
+            # Format from scraper
+            event_start_str = event.get("start")
     
     # Parse the datetime
     event_start = datetime.datetime.fromisoformat(event_start_str.replace('Z', ''))
     
-    # Create a time window query
-    time_min = (event_start - datetime.timedelta(minutes=1)).isoformat() + "Z"
-    time_max = (event_start + datetime.timedelta(minutes=1)).isoformat() + "Z"
+    # Create a time window query - properly format for RFC3339
+    time_min = (event_start - datetime.timedelta(minutes=1)).isoformat()
+    time_max = (event_start + datetime.timedelta(minutes=1)).isoformat()
+    
+    # Ensure proper timezone format for Google Calendar API
+    if not time_min.endswith('Z') and '+' not in time_min and '-' not in time_min[-6:]:
+        time_min += 'Z'
+    if not time_max.endswith('Z') and '+' not in time_max and '-' not in time_max[-6:]:
+        time_max += 'Z'
 
     events_result = (
         service.events()
