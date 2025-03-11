@@ -9,7 +9,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bs4 import BeautifulSoup
 
-from butler_cal.scraper import parse_event_datetime, scrape_butler_events
+from butler_cal.scraper import (
+    parse_event_datetime,
+    scrape_butler_events,
+    scrape_utexas_calendar,
+)
 
 HERE = Path(__file__).parent
 
@@ -194,3 +198,21 @@ def test_second_event_details():
     assert event["location"] == "Bates Recital Hall"
     assert event["admission_info"] == "Admission: Free"
     assert event["details"] == "DMA Chamber Recital"
+
+
+@patch("butler_cal.scraper.scrape_butler_events")
+def test_scrape_utexas_calendar(mock_scrape_butler_events):
+    # Setup mock to return events for first page and empty list for second page
+    mock_scrape_butler_events.side_effect = [
+        [{"title": "Event 1"}, {"title": "Event 2"}],
+        [],
+    ]
+
+    # Call function
+    events = scrape_utexas_calendar()
+
+    # Verify
+    assert len(events) == 2
+    assert mock_scrape_butler_events.call_count == 2
+    mock_scrape_butler_events.assert_any_call("https://music.utexas.edu/events")
+    mock_scrape_butler_events.assert_any_call("https://music.utexas.edu/events?page=1")

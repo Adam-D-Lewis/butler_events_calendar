@@ -7,7 +7,6 @@ from butler_cal.gcal import (
     debug_event_format,
     event_exists,
     get_google_calendar_service,
-    scrape_utexas_calendar,
 )
 
 
@@ -35,15 +34,13 @@ class TestGcalFunctions(unittest.TestCase):
 
         # Test with default setup
         service = get_google_calendar_service()
-        
+
         # Verify the credentials function was called
         mock_get_credentials.assert_called_once()
-        
+
         # Verify the build function was called with correct parameters
-        mock_build.assert_called_with(
-            "calendar", "v3", credentials="mock_credentials"
-        )
-        
+        mock_build.assert_called_with("calendar", "v3", credentials="mock_credentials")
+
         # Verify the service was returned correctly
         self.assertEqual(service, "mock_service")
 
@@ -81,25 +78,6 @@ class TestGcalFunctions(unittest.TestCase):
 
         self.assertEqual(result, mock_event)
 
-    @patch("butler_cal.gcal.scrape_butler_events")
-    def test_scrape_utexas_calendar(self, mock_scrape_butler_events):
-        # Setup mock to return events for first page and empty list for second page
-        mock_scrape_butler_events.side_effect = [
-            [{"title": "Event 1"}, {"title": "Event 2"}],
-            [],
-        ]
-
-        # Call function
-        events = scrape_utexas_calendar()
-
-        # Verify
-        self.assertEqual(len(events), 2)
-        self.assertEqual(mock_scrape_butler_events.call_count, 2)
-        mock_scrape_butler_events.assert_any_call("https://music.utexas.edu/events")
-        mock_scrape_butler_events.assert_any_call(
-            "https://music.utexas.edu/events?page=1"
-        )
-
     @patch("butler_cal.gcal.logger.info")
     def test_debug_event_format(self, mock_logger):
         # Test with dict start format
@@ -115,7 +93,7 @@ class TestGcalFunctions(unittest.TestCase):
 
         # Reset mock for second test
         mock_logger.reset_mock()
-        
+
         # Test with direct start format
         event_direct = {"summary": "Test Event", "start": "2023-01-01T10:00:00"}
 
