@@ -5,8 +5,8 @@ from loguru import logger
 from butler_cal.gcal import (
     event_exists,
     get_google_calendar_service,
-    scrape_utexas_calendar,
 )
+from butler_cal.scraper import scrape_utexas_calendar
 
 
 def main():
@@ -22,7 +22,8 @@ def main():
                 calendarId=calendar_id,
                 body={
                     "summary": event["summary"],
-                    "description": event["description"],
+                    "description": event["description"] + f"\n{event['url']}",
+                    "location": event["location"],
                     "start": {
                         "dateTime": event["start"],
                         "timeZone": "America/Chicago",

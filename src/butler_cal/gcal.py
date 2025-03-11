@@ -6,8 +6,6 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from loguru import logger
 
-from butler_cal.scraper import scrape_butler_events
-
 
 def get_service_account_credentials():
     """Get service account credentials from environment variables."""
@@ -91,44 +89,6 @@ def create_calendar_event(
     event = service.events().insert(calendarId=calendar_id, body=event).execute()
     logger.info(f'Event created: {event.get("htmlLink")}')
     return event
-
-
-def scrape_utexas_calendar():
-    """
-    Scrape events from the Butler School of Music website.
-
-    Returns:
-        List of event dictionaries with details
-    """
-    base_url = "https://music.utexas.edu/events"
-    events = []
-    page = 0
-
-    while True:
-        # Use the base URL for page 0, and add the ?page= parameter for subsequent pages.
-        url = base_url if page == 0 else f"{base_url}?page={page}"
-
-        try:
-            logger.info(f"Scraping page {page}: {url}")
-            # Use our specialized scraper to get events from this page
-            page_events = scrape_butler_events(url)
-
-            # If no events found on this page, we've reached the end
-            if not page_events:
-                logger.info(f"No events found on page {page}")
-                break
-
-            # Add events from this page to our collection
-            events.extend(page_events)
-
-            # Move to the next page
-            page += 1
-
-        except Exception as e:
-            logger.info(f"Error scraping page {page}: {e}")
-            break
-
-    return events
 
 
 def debug_event_format(event, prefix="Event"):

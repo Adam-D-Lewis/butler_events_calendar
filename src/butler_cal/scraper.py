@@ -9,6 +9,44 @@ from bs4 import BeautifulSoup
 from loguru import logger
 
 
+def scrape_utexas_calendar():
+    """
+    Scrape events from the Butler School of Music website.
+
+    Returns:
+        List of event dictionaries with details
+    """
+    base_url = "https://music.utexas.edu/events"
+    events = []
+    page = 0
+
+    while True:
+        # Use the base URL for page 0, and add the ?page= parameter for subsequent pages.
+        url = base_url if page == 0 else f"{base_url}?page={page}"
+
+        try:
+            logger.info(f"Scraping page {page}: {url}")
+            # Use our specialized scraper to get events from this page
+            page_events = scrape_butler_events(url)
+
+            # If no events found on this page, we've reached the end
+            if not page_events:
+                logger.info(f"No events found on page {page}")
+                break
+
+            # Add events from this page to our collection
+            events.extend(page_events)
+
+            # Move to the next page
+            page += 1
+
+        except Exception as e:
+            logger.info(f"Error scraping page {page}: {e}")
+            break
+
+    return events
+
+
 def scrape_butler_events(url="https://music.utexas.edu/events"):
     """
     Scrape events from the Butler School of Music website.
