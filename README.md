@@ -11,7 +11,9 @@ Use Hatch to build and install the package.
 Run the script using the command:
 
 ```bash
-update-calendar
+python -m butler_cal
+# or to delete events
+python -m butler_cal --delete-all
 ```
 
 Ensure you have set up your Google Calendar API credentials correctly.

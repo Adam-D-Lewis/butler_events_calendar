@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-update-calendar = "butler_cal.update_calendar:main"
+update-calendar = "butler_cal.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

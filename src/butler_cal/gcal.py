@@ -156,3 +156,23 @@ def event_exists(service, calendar_id, event, debug=False):
     )
     existing_events = events_result.get("items", [])
     return len(existing_events) > 0
+
+
+def delete_all_events(service, calendar_id):
+    """Delete all events from the specified calendar."""
+    # Get all events
+    events_result = (
+        service.events().list(calendarId=calendar_id, maxResults=2500).execute()
+    )
+    events = events_result.get("items", [])
+
+    if not events:
+        logger.info("No events found to delete.")
+        return
+
+    # Delete each event
+    for event in events:
+        service.events().delete(calendarId=calendar_id, eventId=event["id"]).execute()
+        logger.info(f"Deleted event: {event.get('summary', 'Unnamed event')}")
+
+    logger.info(f"Successfully deleted {len(events)} events from the calendar.")
