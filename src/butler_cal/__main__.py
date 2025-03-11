@@ -1,5 +1,7 @@
 import os
 
+from loguru import logger
+
 from butler_cal.gcal import (
     event_exists,
     get_google_calendar_service,
@@ -28,9 +30,9 @@ def main():
                     "end": {"dateTime": event["end"], "timeZone": "America/Chicago"},
                 },
             ).execute()
-            print(f"Added event: {event['summary']}")
+            logger.info(f"Added event: {event['summary']}")
         else:
-            print(f"Event exists: {event['summary']}")
+            logger.info(f"Event exists: {event['summary']}")
 
 
 if __name__ == "__main__":

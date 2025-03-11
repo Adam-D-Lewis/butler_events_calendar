@@ -89,7 +89,7 @@ def create_calendar_event(
     }
 
     event = service.events().insert(calendarId=calendar_id, body=event).execute()
-    print(f'Event created: {event.get("htmlLink")}')
+    logger.info(f'Event created: {event.get("htmlLink")}')
     return event
 
 
@@ -123,24 +123,24 @@ def scrape_utexas_calendar():
             page += 1
 
         except Exception as e:
-            print(f"Error scraping page {page}: {e}")
+            logger.info(f"Error scraping page {page}: {e}")
             break
 
     return events
 
 
 def debug_event_format(event, prefix="Event"):
-    """Debug helper to print event format details"""
-    print(f"{prefix} summary: {event.get('summary')}")
+    """Debug helper to logger.info event format details"""
+    logger.info(f"{prefix} summary: {event.get('summary')}")
 
     if isinstance(event.get("start"), dict):
         start_time = event["start"].get("dateTime")
-        print(f"{prefix} start (dict): {start_time}")
+        logger.info(f"{prefix} start (dict): {start_time}")
     else:
         start_time = event.get("start")
-        print(f"{prefix} start (direct): {start_time}")
+        logger.info(f"{prefix} start (direct): {start_time}")
 
-    print(f"{prefix} type: {type(event.get('start'))}")
+    logger.info(f"{prefix} type: {type(event.get('start'))}")
     return start_time
 
 
