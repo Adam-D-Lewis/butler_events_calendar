@@ -26,39 +26,26 @@ class TestGcalFunctions(unittest.TestCase):
         self.start_datetime = datetime.datetime(2023, 1, 1, 10, 0, 0)
         self.end_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
 
-    @patch("butler_cal.gcal.service_account.Credentials.from_service_account_file")
+    @patch("butler_cal.gcal.get_service_account_credentials")
     @patch("butler_cal.gcal.build")
-    def test_get_google_calendar_service(self, mock_build, mock_credentials):
+    def test_get_google_calendar_service(self, mock_build, mock_get_credentials):
         # Setup mocks
-        mock_credentials.return_value = "mock_credentials"
+        mock_get_credentials.return_value = "mock_credentials"
         mock_build.return_value = "mock_service"
 
-        # Test with environment variable
-        with patch.dict("os.environ", {"SA_CREDENTIALS_PATH": "test_path.json"}):
-            service = get_google_calendar_service()
-            mock_credentials.assert_called_with(
-                "test_path.json", scopes=["https://www.googleapis.com/auth/calendar"]
-            )
-            mock_build.assert_called_with(
-                "calendar", "v3", credentials="mock_credentials"
-            )
-            self.assertEqual(service, "mock_service")
-
-        # Reset mocks for the second test
-        mock_credentials.reset_mock()
-        mock_build.reset_mock()
-
-        # Test with default path
-        with patch.dict("os.environ", {}, clear=True):
-            service = get_google_calendar_service()
-            mock_credentials.assert_called_with(
-                "butler-calendar-452702-e1335e356afc.json",
-                scopes=["https://www.googleapis.com/auth/calendar"],
-            )
-            mock_build.assert_called_with(
-                "calendar", "v3", credentials="mock_credentials"
-            )
-            self.assertEqual(service, "mock_service")
+        # Test with default setup
+        service = get_google_calendar_service()
+        
+        # Verify the credentials function was called
+        mock_get_credentials.assert_called_once()
+        
+        # Verify the build function was called with correct parameters
+        mock_build.assert_called_with(
+            "calendar", "v3", credentials="mock_credentials"
+        )
+        
+        # Verify the service was returned correctly
+        self.assertEqual(service, "mock_service")
 
     def test_create_calendar_event(self):
         # Setup mock
@@ -113,27 +100,29 @@ class TestGcalFunctions(unittest.TestCase):
             "https://music.utexas.edu/events?page=1"
         )
 
-    def test_debug_event_format(self):
+    @patch("butler_cal.gcal.logger.info")
+    def test_debug_event_format(self, mock_logger):
         # Test with dict start format
         event_dict = {
             "summary": "Test Event",
             "start": {"dateTime": "2023-01-01T10:00:00"},
         }
 
-        with patch("builtins.print") as mock_print:
-            result = debug_event_format(event_dict, prefix="Test")
-            self.assertEqual(result, "2023-01-01T10:00:00")
-            mock_print.assert_any_call("Test summary: Test Event")
-            mock_print.assert_any_call("Test start (dict): 2023-01-01T10:00:00")
+        result = debug_event_format(event_dict, prefix="Test")
+        self.assertEqual(result, "2023-01-01T10:00:00")
+        mock_logger.assert_any_call("Test summary: Test Event")
+        mock_logger.assert_any_call("Test start (dict): 2023-01-01T10:00:00")
 
+        # Reset mock for second test
+        mock_logger.reset_mock()
+        
         # Test with direct start format
         event_direct = {"summary": "Test Event", "start": "2023-01-01T10:00:00"}
 
-        with patch("builtins.print") as mock_print:
-            result = debug_event_format(event_direct, prefix="Test")
-            self.assertEqual(result, "2023-01-01T10:00:00")
-            mock_print.assert_any_call("Test summary: Test Event")
-            mock_print.assert_any_call("Test start (direct): 2023-01-01T10:00:00")
+        result = debug_event_format(event_direct, prefix="Test")
+        self.assertEqual(result, "2023-01-01T10:00:00")
+        mock_logger.assert_any_call("Test summary: Test Event")
+        mock_logger.assert_any_call("Test start (direct): 2023-01-01T10:00:00")
 
     def test_event_exists(self):
         # Setup mock for event that exists
