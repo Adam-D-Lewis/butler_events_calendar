@@ -7,8 +7,8 @@ on:
         - cron: "0 0 * * 0"
 
 jobs:
-  test-general:
-    name: "Pytest"
+  weekly-run:
+    name: "Weekly Run"
     runs-on: ubuntu-latest
     defaults:
       run:
