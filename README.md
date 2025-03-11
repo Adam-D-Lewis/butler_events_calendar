@@ -1,5 +1,10 @@
 # Butler School of Music at UT Austin Calendar Scraper
 
+| Information | Links |
+| :---------- | :-----|
+| Calendar Update Status | [![Calendar Update Status]](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/run_weekly.yaml) |
+| CI | [![Tests](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml/badge.svg)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml) |
+
 This package scrapes the UT Austin music calendar and updates a Google Calendar with the events.  If you just want to subscribe to the calendar, [click this link](https://calendar.google.com/calendar/u/0?cid=OWM1NDk4ODU5NTFiOTkxMDA1YjE4NTE5OGFiYjVmN2U5ZmI2YmE4Y2E4YWExN2ZmNmMxNjZiMTYxMWU3ZjBhZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) after logging into your Google account.
 
 ## Installation
