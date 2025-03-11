@@ -44,6 +44,10 @@ class TestGcalFunctions(unittest.TestCase):
             )
             self.assertEqual(service, "mock_service")
 
+        # Reset mocks for the second test
+        mock_credentials.reset_mock()
+        mock_build.reset_mock()
+
         # Test with default path
         with patch.dict("os.environ", {}, clear=True):
             service = get_google_calendar_service()
@@ -51,6 +55,10 @@ class TestGcalFunctions(unittest.TestCase):
                 "butler-calendar-452702-e1335e356afc.json",
                 scopes=["https://www.googleapis.com/auth/calendar"],
             )
+            mock_build.assert_called_with(
+                "calendar", "v3", credentials="mock_credentials"
+            )
+            self.assertEqual(service, "mock_service")
 
     def test_create_calendar_event(self):
         # Setup mock
@@ -113,19 +121,19 @@ class TestGcalFunctions(unittest.TestCase):
         }
 
         with patch("builtins.print") as mock_print:
-            result = debug_event_format(event_dict)
+            result = debug_event_format(event_dict, prefix="Test")
             self.assertEqual(result, "2023-01-01T10:00:00")
-            mock_print.assert_any_call("Event summary: Test Event")
-            mock_print.assert_any_call("Event start (dict): 2023-01-01T10:00:00")
+            mock_print.assert_any_call("Test summary: Test Event")
+            mock_print.assert_any_call("Test start (dict): 2023-01-01T10:00:00")
 
         # Test with direct start format
         event_direct = {"summary": "Test Event", "start": "2023-01-01T10:00:00"}
 
         with patch("builtins.print") as mock_print:
-            result = debug_event_format(event_direct)
+            result = debug_event_format(event_direct, prefix="Test")
             self.assertEqual(result, "2023-01-01T10:00:00")
-            mock_print.assert_any_call("Event summary: Test Event")
-            mock_print.assert_any_call("Event start (direct): 2023-01-01T10:00:00")
+            mock_print.assert_any_call("Test summary: Test Event")
+            mock_print.assert_any_call("Test start (direct): 2023-01-01T10:00:00")
 
     def test_event_exists(self):
         # Setup mock for event that exists
