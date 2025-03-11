@@ -24,4 +24,5 @@ Ensure you have set up your Google Calendar API credentials correctly.
 - Create a service account in the project.
 - Create service account credentials in GCP (json file)
 - Share target calendar with service account email address
+- set CALENDAR_ID and one of SA_CREDENTIALS or SA_CREDENTIALS_PATH env vars.
 - run script regularly
