@@ -2,7 +2,7 @@
 
 | Information | Links |
 | :---------- | :-----|
-| Calendar Sync Status | ![Last Calendar Sync](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FAdam-D-Lewis%2Fbutler_events_calendar%2Factions%2Fworkflows%2F148948811%2Fruns%3Fquery%3Dbranch%253Amain%2Bis%253Asuccess%26per_page%3D1&query=%24.workflow_runs%5B0%5D.run_started_at) |
+| Calendar Sync Status | ![Last Calendar Sync](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FAdam-D-Lewis%2Fbutler_events_calendar%2Factions%2Fworkflows%2F148948811%2Fruns%3Fquery%3Dbranch%253Amain%2Bis%253Asuccess%26per_page%3D1&query=%24.workflow_runs%5B0%5D.run_started_at&label=Date&format=date) |
 | CI | [![Tests](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml/badge.svg)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml) |
 
 This package scrapes the UT Austin music calendar and updates a Google Calendar with the events.  If you just want to subscribe to the calendar, [click this link](https://calendar.google.com/calendar/u/0?cid=OWM1NDk4ODU5NTFiOTkxMDA1YjE4NTE5OGFiYjVmN2U5ZmI2YmE4Y2E4YWExN2ZmNmMxNjZiMTYxMWU3ZjBhZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) after logging into your Google account.
