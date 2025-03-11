@@ -109,11 +109,13 @@ def scrape_utexas_calendar():
         url = base_url if page == 0 else f"{base_url}?page={page}"
 
         try:
+            logger.info(f"Scraping page {page}: {url}")
             # Use our specialized scraper to get events from this page
             page_events = scrape_butler_events(url)
 
             # If no events found on this page, we've reached the end
             if not page_events:
+                logger.info(f"No events found on page {page}")
                 break
 
             # Add events from this page to our collection
