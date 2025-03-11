@@ -31,10 +31,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.10"
-          - "3.11"
           - "3.12"
-          - "3.13"
       fail-fast: false
     concurrency:
       group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}-${{ matrix.python-version }}
@@ -62,3 +59,6 @@ jobs:
         run: |
           pytest --version
           pytest
+        env:
+            CALENDAR_ID: ${{ secrets.CALENDAR_ID }}
+            SA_CREDENTIALS: ${{ secrets.SA_CREDENTIALS }}
