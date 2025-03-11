@@ -15,7 +15,15 @@ dependencies = [
   "google-api-python-client",
   "google-auth",
   "google-auth-oauthlib",
-  "google-auth-httplib2"
+  "google-auth-httplib2",
+  "loguru",
+]
+
+# optional dev dependencies
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "mypy",
 ]
 
 [project.scripts]

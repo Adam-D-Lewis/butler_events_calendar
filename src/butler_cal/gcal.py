@@ -1,24 +1,49 @@
 import datetime
+import json
 import os
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from loguru import logger
 
 from butler_cal.scraper import scrape_butler_events
 
 
-def get_google_calendar_service():
-    """Get an authorized Google Calendar API service instance using service account."""
+def get_service_account_credentials():
+    """Get service account credentials from environment variables."""
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-    # Use environment variable if available, otherwise fall back to the file path in gcal.py
-    service_account_file = os.environ.get(
-        "SA_CREDENTIALS_PATH", "butler-calendar-452702-e1335e356afc.json"
-    )
+    if "SA_CREDENTIALS" in os.environ:
+        logger.info('Loading credentials from "SA_CREDENTIALS" environment variable.')
+        info = json.loads(os.environ["SA_CREDENTIALS"].replace("\n", "\\n"))
+        credentials = service_account.Credentials.from_service_account_info(
+            info=info,
+            scopes=SCOPES,
+        )
+    elif "SA_CREDENTIALS_PATH" in os.environ:
+        service_account_file = os.environ["SA_CREDENTIALS_PATH"]
 
-    credentials = service_account.Credentials.from_service_account_file(
-        service_account_file, scopes=SCOPES
-    )
+        logger.info(
+            f'Loading credentials from "{service_account_file}" environment variable.'
+        )
+
+        credentials = service_account.Credentials.from_service_account_file(
+            service_account_file,
+            scopes=SCOPES,
+        )
+    else:
+        raise ValueError(
+            "No service account credentials provided.  Please set SA_CREDENTIALS or SA_CREDENTIALS_PATH."
+        )
+
+    return credentials
+
+
+def get_google_calendar_service():
+    """Get an authorized Google Calendar API service instance using service account."""
+
+    credentials = get_service_account_credentials()
+
     service = build("calendar", "v3", credentials=credentials)
     return service
 

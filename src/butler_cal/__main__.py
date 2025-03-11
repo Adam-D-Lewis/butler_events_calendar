@@ -34,6 +34,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # events = scrape_utexas_calendar()
-    # breakpoint()
     main()
