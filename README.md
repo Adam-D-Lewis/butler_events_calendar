@@ -2,7 +2,7 @@
 
 | Information | Links |
 | :---------- | :-----|
-| Calendar Update Status | [![Calendar Update Status](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/run_weekly.yaml?status=completed&per_page=1)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/run_weekly.yaml) |
+| Calendar Update Status | ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgithub.com%2FAdam-D-Lewis%2Fbutler_events_calendar%2Factions%2Fworkflows%2Frun_weekly.yaml%2Fstatus%3Dcompleted%26per_page%3D1&query=%24.workflow_runs%5B0%5D.run_started_at) |
 | CI | [![Tests](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml/badge.svg)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml) |
 
 This package scrapes the UT Austin music calendar and updates a Google Calendar with the events.  If you just want to subscribe to the calendar, [click this link](https://calendar.google.com/calendar/u/0?cid=OWM1NDk4ODU5NTFiOTkxMDA1YjE4NTE5OGFiYjVmN2U5ZmI2YmE4Y2E4YWExN2ZmNmMxNjZiMTYxMWU3ZjBhZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) after logging into your Google account.
