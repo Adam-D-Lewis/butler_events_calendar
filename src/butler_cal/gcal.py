@@ -178,21 +178,21 @@ def delete_all_events(service, calendar_id):
     logger.info(f"Successfully deleted {len(events)} events from the calendar.")
 
 
-def delete_removed_events(service, calendar_id, scraped_events, time_window_days=30):
+def delete_removed_events(service, calendar_id, latest_events, time_window_days=30):
     """
     Delete events from the calendar that are no longer in the scraped events list.
     
     Args:
         service: Google Calendar API service instance
         calendar_id: ID of the calendar to check
-        scraped_events: List of events scraped from the website
+        latest_events: List of events scraped from the website
         time_window_days: Number of days to look ahead/behind for events (default: 30)
     
     Returns:
         Number of events deleted
     """
     # Create a time window for the query
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc)
     time_min = (now - datetime.timedelta(days=time_window_days)).isoformat() + "Z"
     time_max = (now + datetime.timedelta(days=time_window_days)).isoformat() + "Z"
     
@@ -215,7 +215,7 @@ def delete_removed_events(service, calendar_id, scraped_events, time_window_days
     
     # Create a set of (summary, start_time) tuples from scraped events for easy comparison
     scraped_event_keys = set()
-    for event in scraped_events:
+    for event in latest_events:
         # Handle different event formats
         if isinstance(event.get("start"), dict):
             event_start = event["start"].get("dateTime")
