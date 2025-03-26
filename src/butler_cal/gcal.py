@@ -181,25 +181,27 @@ def delete_all_events(service, calendar_id):
 def delete_removed_events(service, calendar_id, latest_events, time_window_days=30):
     """
     Delete events from the calendar that are no longer in the scraped events list.
-    
+
     Args:
         service: Google Calendar API service instance
         calendar_id: ID of the calendar to check
         latest_events: List of events scraped from the website
-        time_window_days: Number of days to look ahead/behind for events (default: 30)
-    
+        time_window_days: Number of days to look ahead for events (default: 30)
+
     Returns:
         Number of events deleted
     """
     # Create a time window for the query
     now = datetime.datetime.now(datetime.timezone.utc)
-    
+
     # Format time strings in RFC3339 format
-    time_min = (now - datetime.timedelta(days=time_window_days)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    time_max = (now + datetime.timedelta(days=time_window_days)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    
+    time_min = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    time_max = (now + datetime.timedelta(days=time_window_days)).strftime(
+        "%Y-%m-%dT%H:%M:%S.000Z"
+    )
+
     logger.info(f"Checking for events between {time_min} and {time_max}")
-    
+
     # Get all events in the calendar within the time window
     events_result = (
         service.events()
@@ -212,11 +214,11 @@ def delete_removed_events(service, calendar_id, latest_events, time_window_days=
         .execute()
     )
     calendar_events = events_result.get("items", [])
-    
+
     if not calendar_events:
         logger.info("No events found in calendar within the time window.")
         return 0
-    
+
     # Create a set of (summary, start_time) tuples from scraped events for easy comparison
     scraped_event_keys = set()
     for event in latest_events:
@@ -225,33 +227,37 @@ def delete_removed_events(service, calendar_id, latest_events, time_window_days=
             event_start = event["start"].get("dateTime")
         else:
             event_start = event.get("start")
-            
+
         # Only add if we have both summary and start time
         if event.get("summary") and event_start:
             # Normalize the datetime format by removing timezone info for comparison
             start_dt = datetime.datetime.fromisoformat(event_start.replace("Z", ""))
             scraped_event_keys.add((event["summary"], start_dt.isoformat()))
-    
+
     # Check each calendar event
     deleted_count = 0
     for event in calendar_events:
         summary = event.get("summary")
         start_time = event.get("start", {}).get("dateTime")
-        
+
         if summary and start_time:
             # Normalize the datetime format by removing timezone info for comparison
             start_dt = datetime.datetime.fromisoformat(start_time.replace("Z", ""))
             event_key = (summary, start_dt.isoformat())
-            
+
             # If the event is not in the scraped events, delete it
             if event_key not in scraped_event_keys:
-                service.events().delete(calendarId=calendar_id, eventId=event["id"]).execute()
+                service.events().delete(
+                    calendarId=calendar_id, eventId=event["id"]
+                ).execute()
                 logger.info(f"Deleted removed event: {summary} at {start_time}")
                 deleted_count += 1
-    
+
     if deleted_count > 0:
-        logger.info(f"Successfully deleted {deleted_count} events that were removed from the source.")
+        logger.info(
+            f"Successfully deleted {deleted_count} events that were removed from the source."
+        )
     else:
         logger.info("No removed events found to delete.")
-        
+
     return deleted_count
