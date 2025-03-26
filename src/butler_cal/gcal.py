@@ -193,8 +193,12 @@ def delete_removed_events(service, calendar_id, latest_events, time_window_days=
     """
     # Create a time window for the query
     now = datetime.datetime.now(datetime.timezone.utc)
-    time_min = (now - datetime.timedelta(days=time_window_days)).isoformat() + "Z"
-    time_max = (now + datetime.timedelta(days=time_window_days)).isoformat() + "Z"
+    
+    # Format time strings in RFC3339 format
+    time_min = (now - datetime.timedelta(days=time_window_days)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    time_max = (now + datetime.timedelta(days=time_window_days)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    
+    logger.info(f"Checking for events between {time_min} and {time_max}")
     
     # Get all events in the calendar within the time window
     events_result = (
