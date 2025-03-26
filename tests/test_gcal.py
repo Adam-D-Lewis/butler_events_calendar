@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 from butler_cal.gcal import (
     create_calendar_event,
     debug_event_format,
+    delete_removed_events,
     event_exists,
     get_google_calendar_service,
 )
@@ -133,6 +134,87 @@ class TestGcalFunctions(unittest.TestCase):
 
         result = event_exists(self.mock_service, self.calendar_id, event_dict)
         self.assertFalse(result)
+        
+    def test_delete_removed_events(self):
+        # Setup mock for list events
+        mock_events_result = {
+            "items": [
+                {
+                    "id": "event1",
+                    "summary": "Event 1",
+                    "start": {"dateTime": "2023-01-01T10:00:00-06:00"},
+                },
+                {
+                    "id": "event2",
+                    "summary": "Event 2",
+                    "start": {"dateTime": "2023-01-02T11:00:00-06:00"},
+                },
+                {
+                    "id": "event3",
+                    "summary": "Event 3",
+                    "start": {"dateTime": "2023-01-03T12:00:00-06:00"},
+                },
+            ]
+        }
+        self.mock_events.list.return_value.execute.return_value = mock_events_result
+        
+        # Mock delete event
+        mock_delete = MagicMock()
+        self.mock_events.delete.return_value = mock_delete
+        
+        # Create scraped events (only 2 of the 3 events remain)
+        scraped_events = [
+            {
+                "summary": "Event 1",
+                "start": "2023-01-01T10:00:00-06:00",
+            },
+            {
+                "summary": "Event 3",
+                "start": "2023-01-03T12:00:00-06:00",
+            },
+        ]
+        
+        # Call the function
+        result = delete_removed_events(
+            self.mock_service, self.calendar_id, scraped_events
+        )
+        
+        # Verify results
+        self.assertEqual(result, 1)  # One event should be deleted
+        
+        # Verify the correct event was deleted
+        self.mock_events.delete.assert_called_once_with(
+            calendarId=self.calendar_id, eventId="event2"
+        )
+        
+        # Test with no events to delete
+        # Reset mocks
+        self.mock_events.delete.reset_mock()
+        
+        # Now all calendar events are in scraped events
+        scraped_events = [
+            {
+                "summary": "Event 1",
+                "start": "2023-01-01T10:00:00-06:00",
+            },
+            {
+                "summary": "Event 2",
+                "start": "2023-01-02T11:00:00-06:00",
+            },
+            {
+                "summary": "Event 3",
+                "start": "2023-01-03T12:00:00-06:00",
+            },
+        ]
+        
+        # Call the function again
+        result = delete_removed_events(
+            self.mock_service, self.calendar_id, scraped_events
+        )
+        
+        # Verify results
+        self.assertEqual(result, 0)  # No events should be deleted
+        self.mock_events.delete.assert_not_called()
 
 
 if __name__ == "__main__":
