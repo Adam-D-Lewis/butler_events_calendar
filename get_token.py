@@ -1,5 +1,10 @@
 import requests
 import re
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the InsecureRequestWarning
+warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
 def get_token_from_html(url):
     headers = {
@@ -10,12 +15,26 @@ def get_token_from_html(url):
         response = requests.get(url, headers=headers, verify=False, allow_redirects=True)
         response.raise_for_status()
         html = response.text
-        match = re.search(r'window\.hcmsClientToken = "(Bearer [^"]+)";', html)
+        # Original regex
+        match = re.search(r'window\.hcmsClientToken\s*=\s*"(Bearer [^"]+)"', html)
         if match:
             return match.group(1)
         else:
-            print("hcmsClientToken not found in HTML")
-            return None
+            # Try a broader search for the token pattern itself
+            match = re.search(r'"(Bearer [a-zA-Z0-9\._\-\+/=]+)"', html)
+            if match:
+                 print("Found token with broader regex.")
+                 return match.group(1)
+            else:
+                print("hcmsClientToken not found in HTML with primary or broader regex.")
+                # Print a snippet for debugging
+                snippet_length = 500
+                print(f"HTML snippet (length {len(html)}):")
+                if len(html) > snippet_length:
+                    print(html[:snippet_length] + "...")
+                else:
+                    print(html)
+                return None
     except requests.exceptions.RequestException as e:
         print(f"Error fetching HTML: {e}")
         return None
