@@ -1,7 +1,7 @@
 [project]
 name = "butler-cal"
 version = "0.5.0"
-description = "Scrape UT Calendar and update Google Calendar"
+description = "Scrape multiple event sources and update Google Calendar"
 authors = [
   { name = "Adam Lewis" }
 ]
@@ -23,6 +23,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-mock",
+  "responses",
   "mypy",
 ]
 
