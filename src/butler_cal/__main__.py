@@ -134,9 +134,10 @@ def sync(
         logger.error("No scrapers specified or found.")
         raise typer.Exit(1)
         
-    # Merge command-line calendar mapping with config
+    # Get scraper configs from the loaded configuration
+    scraper_configs = {}
     for scraper_name in scrapers_to_use:
-        scraper_config = config.get(scraper_name, {})
+        scraper_configs[scraper_name] = config.get(scraper_name, {})
     
     # Scrape events from all selected scrapers
     events = []
@@ -145,7 +146,7 @@ def sync(
             logger.info(f"Scraping events using {scraper_name}...")
             
             # Initialize the scraper with loaded config
-            scraper = get_scraper(scraper_name, scraper_config)
+            scraper = get_scraper(scraper_name, scraper_configs.get(scraper_name, {}))
             
             # Use date ranges from command-line arguments
             start_date = datetime.now() - timedelta(days=days_back)
@@ -252,7 +253,7 @@ def sync(
             batch.execute()
 
     # Handle event deletion - we need to do this per calendar now
-    if force_sync or added_count > 0:  # Always sync if we added events
+    if force_sync or added_count > 0:  # Sync if we added events or force_sync is True
         if dry_run:
             # Just calculate what would be deleted
             events_to_delete = []
