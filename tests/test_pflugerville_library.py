@@ -8,7 +8,6 @@ import requests
 
 from butler_cal.scraper.scrape_pflugerville_library import (
     PflugervilleLibraryScraper,
-    get_token_from_html,
 )
 
 
@@ -81,7 +80,8 @@ def test_get_token_from_html():
         mock_response.text = html_with_token
         mock_get.return_value = mock_response
 
-        token = get_token_from_html("https://example.com/standard")
+        scraper = PflugervilleLibraryScraper()
+        token = scraper._get_token_from_html("https://example.com/standard")
         assert token == "Bearer abc123xyz"
 
     # HTML with token in alternative format
@@ -103,7 +103,8 @@ def test_get_token_from_html():
         mock_response.text = html_with_alt_token
         mock_get.return_value = mock_response
 
-        token = get_token_from_html("https://example.com/alt")
+        scraper = PflugervilleLibraryScraper()
+        token = scraper._get_token_from_html("https://example.com/alt")
         assert token == "Bearer def456uvw"
 
     # HTML without token
@@ -121,18 +122,20 @@ def test_get_token_from_html():
         mock_response.text = html_without_token
         mock_get.return_value = mock_response
 
-        token = get_token_from_html("https://example.com/none")
+        scraper = PflugervilleLibraryScraper()
+        token = scraper._get_token_from_html("https://example.com/none")
         assert token is None
 
     # Test error handling
     with patch("requests.get") as mock_get:
         mock_get.side_effect = requests.exceptions.RequestException("500 Server Error")
 
-        token = get_token_from_html("https://example.com/error")
+        scraper = PflugervilleLibraryScraper()
+        token = scraper._get_token_from_html("https://example.com/error")
         assert token is None
 
 
-@patch("butler_cal.scraper.scrape_pflugerville_library.get_token_from_html")
+@patch("butler_cal.scraper.scrape_pflugerville_library.PflugervilleLibraryScraper._get_token_from_html")
 def test_pflugerville_library_init(mock_get_token, mock_token):
     """Test PflugervilleLibraryScraper initialization."""
     mock_get_token.return_value = mock_token

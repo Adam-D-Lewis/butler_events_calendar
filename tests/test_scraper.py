@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bs4 import BeautifulSoup
 
-from butler_cal.scraper import scrape_utexas_calendar
+from butler_cal.scraper.scrape_butler_music import ButlerMusicScraper
 from butler_cal.scraper.scrape_butler_music import (
     ButlerMusicScraper,
     parse_event_datetime,
@@ -206,15 +206,16 @@ def test_second_event_details():
 @patch(
     "butler_cal.scraper.scrape_butler_music.ButlerMusicScraper._scrape_butler_events"
 )
-def test_scrape_utexas_calendar(mock_scrape_butler_events):
+def test_butler_music_scraper_get_events(mock_scrape_butler_events):
     # Setup mock to return events for first page and empty list for second page
     mock_scrape_butler_events.side_effect = [
         [{"title": "Event 1"}, {"title": "Event 2"}],
         [],
     ]
 
-    # Call function
-    events = scrape_utexas_calendar()
+    # Create scraper instance and call get_events
+    scraper = ButlerMusicScraper()
+    events = scraper.get_events()
 
     # Verify
     assert len(events) == 2
