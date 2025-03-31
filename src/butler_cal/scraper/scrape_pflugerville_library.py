@@ -58,7 +58,7 @@ class PflugervilleLibraryScraper(CalendarScraper):
     # TODO: Add __repr__ showing input parameters
 
     def __init__(self, **kwargs):
-        super().__init__(name="PflugervilleLibrary")
+        super().__init__(name="PflugervilleLibraryScraper")
         input = PflugervilleLibraryScraperInput(**kwargs)
         self.default_calendar_id = input.default_calendar_id
         self.category_calendar_id_map = input.category_calendar_id_map
