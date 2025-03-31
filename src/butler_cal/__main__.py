@@ -1,7 +1,8 @@
-import argparse
 import os
 from datetime import datetime, timedelta
+from typing import List, Optional
 
+import typer
 from loguru import logger
 
 from butler_cal.gcal import (
@@ -15,117 +16,123 @@ from butler_cal.scraper import (
     load_config,
 )
 
+app = typer.Typer(help="Multi-source Calendar Management")
 
-def main():
-    parser = argparse.ArgumentParser(description="Multi-source Calendar Management")
-    parser.add_argument(
-        "--delete-all", action="store_true", help="Delete all events from the calendar"
-    )
-    parser.add_argument(
-        "--sync",
-        action="store_true",
-        help="Sync calendar by removing events that no longer exist in the scraped sources",
-    )
-    parser.add_argument(
-        "--scrapers",
-        nargs="+",
-        metavar="SCRAPER",
-        help="List of specific scrapers to use (e.g. 'ButlerMusicScraper', 'PflugervilleLibraryScraper'). Use --list-scrapers to see available options.",
-    )
-    parser.add_argument(
-        "--list-scrapers",
-        action="store_true",
-        help="List all available scrapers and exit",
-    )
-    parser.add_argument(
-        "--days-back",
-        type=int,
-        default=7,
-        help="Number of days in the past to fetch events (default: 7)",
-    )
-    parser.add_argument(
-        "--days-ahead",
-        type=int,
-        default=90,
-        help="Number of days in the future to fetch events (default: 90)",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what events would be added/removed without making changes",
-    )
-    parser.add_argument(
-        "--config",
-        help="Path to the YAML configuration file",
-    )
-    args = parser.parse_args()
 
-    # List available scrapers if requested
-    if args.list_scrapers:
-        available_scrapers = get_registered_scrapers()
-        if available_scrapers:
-            print("\nAvailable calendar scrapers:")
-            print("==========================")
-            for name, scraper_class in available_scrapers.items():
-                # Try to get the docstring for more info
-                doc = scraper_class.__doc__ or "No description available"
-                # Format the docstring - take the first line
-                doc_line = doc.strip().split("\n")[0]
-                print(f"  {name}")
-                print(f"    {doc_line}")
-            print(
-                "\nTo use specific scrapers: --scrapers ButlerMusicScraper PflugervilleLibraryScraper"
-            )
-            print("To use all scrapers: (run without --scrapers option)")
-        else:
-            print("No calendar scrapers found. Check your installation.")
-        return
+@app.command()
+def list_scrapers():
+    """List all available scrapers and exit"""
+    available_scrapers = get_registered_scrapers()
+    if available_scrapers:
+        typer.echo("\nAvailable calendar scrapers:")
+        typer.echo("==========================")
+        for name, scraper_class in available_scrapers.items():
+            # Try to get the docstring for more info
+            doc = scraper_class.__doc__ or "No description available"
+            # Format the docstring - take the first line
+            doc_line = doc.strip().split("\n")[0]
+            typer.echo(f"  {name}")
+            typer.echo(f"    {doc_line}")
+        typer.echo(
+            "\nTo use specific scrapers: --scrapers ButlerMusicScraper PflugervilleLibraryScraper"
+        )
+        typer.echo("To use all scrapers: (run without --scrapers option)")
+    else:
+        typer.echo("No calendar scrapers found. Check your installation.")
 
+@app.command()
+def delete_all(
+    calendar_id: Optional[str] = typer.Option(
+        None, help="Calendar ID to delete events from (defaults to CALENDAR_ID env var)"
+    )
+):
+    """Delete all events from the calendar"""
     # Prepare Google Calendar service
     service = get_google_calendar_service()
 
     # Get default calendar ID from args or environment variable
-    default_calendar_id = args.calendar_id or os.environ.get("CALENDAR_ID")
+    default_calendar_id = calendar_id or os.environ.get("CALENDAR_ID")
     if not default_calendar_id:
         logger.error(
-            "No default calendar ID provided. Use --calendar-id or set the CALENDAR_ID environment variable."
+            "No calendar ID provided. Use --calendar-id or set the CALENDAR_ID environment variable."
         )
-        return
+        raise typer.Exit(1)
+
+    delete_all_events(service, default_calendar_id)
+    typer.echo(f"All events deleted from calendar {default_calendar_id}")
+
+@app.command()
+def sync(
+    calendar_id: Optional[str] = typer.Option(
+        None, help="Calendar ID to sync events to (defaults to CALENDAR_ID env var)"
+    ),
+    scrapers: Optional[List[str]] = typer.Option(
+        None, 
+        help="List of specific scrapers to use (e.g. 'ButlerMusicScraper', 'PflugervilleLibraryScraper')"
+    ),
+    days_back: int = typer.Option(
+        7, help="Number of days in the past to fetch events"
+    ),
+    days_ahead: int = typer.Option(
+        90, help="Number of days in the future to fetch events"
+    ),
+    dry_run: bool = typer.Option(
+        False, help="Show what events would be added/removed without making changes"
+    ),
+    config_path: Optional[str] = typer.Option(
+        None, help="Path to the YAML configuration file"
+    ),
+    calendar_mapping: Optional[List[str]] = typer.Option(
+        None, help="Map scrapers to specific calendars (format: 'ScraperName:calendarId')"
+    ),
+    category_mapping: Optional[List[str]] = typer.Option(
+        None, help="Map categories to specific calendars (format: 'Category:calendarId')"
+    ),
+    force_sync: bool = typer.Option(
+        False, help="Force sync calendar by removing events that no longer exist in the scraped sources"
+    ),
+):
+    """Sync events from scrapers to Google Calendar"""
+    # Prepare Google Calendar service
+    service = get_google_calendar_service()
+
+    # Get default calendar ID from args or environment variable
+    default_calendar_id = calendar_id or os.environ.get("CALENDAR_ID")
+    if not default_calendar_id:
+        logger.error(
+            "No calendar ID provided. Use --calendar-id or set the CALENDAR_ID environment variable."
+        )
+        raise typer.Exit(1)
 
     # Parse calendar mappings
     scraper_calendar_mapping = {}
-    if args.calendar_mapping:
-        for mapping in args.calendar_mapping:
+    if calendar_mapping:
+        for mapping in calendar_mapping:
             parts = mapping.split(":", 1)
             if len(parts) == 2:
                 scraper_calendar_mapping[parts[0]] = parts[1]
     
     # Parse category mappings
     category_calendar_mapping = {}
-    if args.category_mapping:
-        for mapping in args.category_mapping:
+    if category_mapping:
+        for mapping in category_mapping:
             parts = mapping.split(":", 1)
             if len(parts) == 2:
                 category_calendar_mapping[parts[0]] = parts[1]
 
-    if args.delete_all:
-        delete_all_events(service, default_calendar_id)
-        return
-
     # Load configuration
-    config = load_config(args.config)
+    config = load_config(config_path)
 
     # Determine which scrapers to use
-    if args.scrapers:
-        scrapers_to_use = args.scrapers
+    if scrapers:
+        scrapers_to_use = scrapers
     else:
         # Use all registered scrapers by default
         scrapers_to_use = list(get_registered_scrapers().keys())
 
     if not scrapers_to_use:
-        raise Exception(
-            "Error: No scrapers specified or found."
-        )
+        logger.error("No scrapers specified or found.")
+        raise typer.Exit(1)
         
     # Merge command-line calendar mapping with config
     for scraper_name in scrapers_to_use:
@@ -141,8 +148,8 @@ def main():
             scraper = get_scraper(scraper_name, scraper_config)
             
             # Use date ranges from command-line arguments
-            start_date = datetime.now() - timedelta(days=args.days_back)
-            end_date = datetime.now() + timedelta(days=args.days_ahead)
+            start_date = datetime.now() - timedelta(days=days_back)
+            end_date = datetime.now() + timedelta(days=days_ahead)
 
             scraper_events = scraper.get_events(
                 start_date=start_date, end_date=end_date
@@ -238,15 +245,15 @@ def main():
 
     # Execute batch request if there are events to add and not in dry-run mode
     if added_count > 0:
-        if args.dry_run:
+        if dry_run:
             logger.info(f"Dry run: Would add {added_count} events to calendar")
         else:
             logger.info(f"Adding {added_count} events in batch...")
             batch.execute()
 
     # Handle event deletion - we need to do this per calendar now
-    if args.sync or added_count > 0:  # Always sync if we added events
-        if args.dry_run:
+    if force_sync or added_count > 0:  # Always sync if we added events
+        if dry_run:
             # Just calculate what would be deleted
             events_to_delete = []
             for event in existing_events:
@@ -312,10 +319,14 @@ def main():
                 total_deleted += deleted_count
                 logger.info(f"Removed {deleted_count} events from calendar {cal_id}")
             
-            logger.info(
+            typer.echo(
                 f"Calendar sync complete: {added_count} events added, {total_deleted} events removed"
             )
+@app.callback()
+def callback():
+    """Butler Calendar - Sync events from multiple sources to Google Calendar"""
+    pass
 
 
 if __name__ == "__main__":
-    main()
+    app()
