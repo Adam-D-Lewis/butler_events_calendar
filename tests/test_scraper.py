@@ -217,8 +217,8 @@ def test_butler_music_scraper_get_events(mock_scrape_butler_events):
     scraper = ButlerMusicScraper()
     events = scraper.get_events()
 
-    # Verify
-    assert len(events) == 2
+    # Verify - events is a dictionary with a single key (None) containing a list of events
+    assert len(events[None]) == 2
     assert mock_scrape_butler_events.call_count == 2
 
     # The assertions below might need adjustments based on how your actual code works now

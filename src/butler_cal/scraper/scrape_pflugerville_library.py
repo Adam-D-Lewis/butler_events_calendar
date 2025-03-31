@@ -29,6 +29,7 @@ class PflugervilleLibraryScraperInput(BaseModel):
     """Input model for Pflugerville Library Scraper."""
 
     category_calendar_id_map: dict[str, str] = Field(
+        default_factory=dict,
         description="Mapping of category names to calendar ids"
     )
     default_calendar_id: str = Field(

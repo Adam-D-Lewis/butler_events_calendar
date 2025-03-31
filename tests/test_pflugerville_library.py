@@ -153,7 +153,7 @@ def test_pflugerville_library_init(mock_get_token, mock_token):
     assert "Library" in scraper.category_ids
 
 
-@patch("butler_cal.scraper.scrape_pflugerville_library.get_token_from_html")
+@patch("butler_cal.scraper.scrape_pflugerville_library.PflugervilleLibraryScraper._get_token_from_html")
 def test_get_events(mock_get_token, mock_token, mock_library_events):
     """Test getting events from the Pflugerville Library API."""
     mock_get_token.return_value = mock_token
@@ -197,7 +197,7 @@ def test_get_events(mock_get_token, mock_token, mock_library_events):
     assert "Children's Area" in events[1]["location"]
 
 
-@patch("butler_cal.scraper.scrape_pflugerville_library.get_token_from_html")
+@patch("butler_cal.scraper.scrape_pflugerville_library.PflugervilleLibraryScraper._get_token_from_html")
 def test_get_events_pagination(mock_get_token, mock_token, mock_library_events):
     """Test event pagination."""
     mock_get_token.return_value = mock_token
@@ -295,7 +295,7 @@ def test_get_events_pagination(mock_get_token, mock_token, mock_library_events):
     assert "2025-03-05T16:00:00" in teen_event["start"]
 
 
-@patch("butler_cal.scraper.scrape_pflugerville_library.get_token_from_html")
+@patch("butler_cal.scraper.scrape_pflugerville_library.PflugervilleLibraryScraper._get_token_from_html")
 def test_normalize_event(mock_get_token, mock_token):
     """Test event normalization."""
     mock_get_token.return_value = mock_token
@@ -345,7 +345,7 @@ def test_normalize_event(mock_get_token, mock_token):
     assert "end" in normalized
 
 
-@patch("butler_cal.scraper.scrape_pflugerville_library.get_token_from_html")
+@patch("butler_cal.scraper.scrape_pflugerville_library.PflugervilleLibraryScraper._get_token_from_html")
 def test_api_error_handling(mock_get_token, mock_token):
     """Test handling of API errors."""
     mock_get_token.return_value = mock_token
