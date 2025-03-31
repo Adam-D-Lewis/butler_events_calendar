@@ -1,18 +1,22 @@
+import abc
 import importlib
 import os
 import pkgutil
+from pydantic_settings import BaseSettings
+import yaml
+from pathlib import Path
 
 from loguru import logger
 
 
 # Base class for all calendar scrapers
-class CalendarScraper:
+class CalendarScraper(abc.ABC):
     """Base class for all calendar scrapers."""
 
-    def __init__(self, name=None, calendar_id=None):
+    def __init__(self, name=None):
         self.name = name or self.__class__.__name__
-        self.calendar_id = calendar_id
 
+    @abc.abstractmethod
     def get_events(self, start_date=None, end_date=None):
         """Retrieve events from calendar source.
 
@@ -23,7 +27,6 @@ class CalendarScraper:
         Returns:
             list: List of event dictionaries with standard format
         """
-        raise NotImplementedError("Subclasses must implement get_events()")
 
     def normalize_event(self, event):
         """Normalize event data to standard format.
@@ -66,18 +69,52 @@ def get_registered_scrapers():
     return _registered_scrapers
 
 
-def get_scraper(name):
+def load_config(config_path=None):
+    """Load configuration from a YAML file.
+    
+    Args:
+        config_path (str, optional): Path to the config file. If None, uses default location.
+        
+    Returns:
+        dict: Configuration dictionary
+    """
+    if config_path is None:
+        raise FileNotFoundError("No config path provided. Looking for default locations.")
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        logger.info(f"Loaded configuration from {config_path}")
+        return config
+    except Exception as e:
+        logger.warning(f"Failed to load config from {config_path}: {e}")
+        return {}
+
+
+def get_scraper(name, scraper_config=None):
     """Get a scraper by name.
 
     Args:
         name: Name of the scraper to get
+        config (dict, optional): Configuration dictionary for the scraper
 
     Returns:
         CalendarScraper: The requested scraper instance
     """
     if name not in _registered_scrapers:
         raise ValueError(f"Scraper {name} not found")
-    return _registered_scrapers[name]()
+    
+    scraper_class = _registered_scrapers[name]
+    
+        
+    # Inspect the scraper class __init__ to determine what parameters it accepts
+    # and pass the appropriate config
+    try:
+        return scraper_class(**scraper_config)
+    except TypeError as e:
+        logger.warning(f"Failed to initialize {name} with config: {e}")
+        # Fall back to default initialization
+        return scraper_class()
 
 
 # Import all modules in the scraper package to ensure scrapers are registered
@@ -99,11 +136,3 @@ def _discover_scrapers():
 
 # Discover scrapers when this module is imported
 _discover_scrapers()
-
-
-# Legacy function for backward compatibility
-def scrape_utexas_calendar():
-    """Legacy function that gets events from the Butler Music scraper."""
-    from .scrape_butler_music import ButlerMusicScraper
-
-    return ButlerMusicScraper().get_events()
