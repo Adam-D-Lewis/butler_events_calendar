@@ -185,8 +185,26 @@ def sync(
                 event_start = event["start"].get("dateTime")
 
             # Check if event already exists using our lookup map
-            event_key = (event["summary"], event_start)
-            if event_key not in existing_event_map:
+            # Normalize the event start time by removing timezone info for comparison
+            normalized_start = event_start
+            if event_start and '-' in event_start:
+                # Handle timezone like '2025-04-27T18:30:00-05:00'
+                normalized_start = event_start.split('-')[0]
+            
+            event_key = (event["summary"], normalized_start)
+            
+            # Try different variations of the key to handle timezone differences
+            found_match = False
+            for possible_key in [
+                event_key,  # Normalized without timezone
+                (event["summary"], event_start),  # Original with timezone
+            ]:
+                if possible_key in existing_event_map:
+                    found_match = True
+                    logger.info(f"Event exists (matched key: {possible_key}): {event['summary']}")
+                    break
+                    
+            if not found_match:
                 # Create event body
                 event_body = {
                     "summary": event["summary"],
