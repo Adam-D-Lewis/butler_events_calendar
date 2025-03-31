@@ -165,7 +165,7 @@ def sync(
                 existing_event_map[key] = existing_event["id"]
 
         # Process events in batches of 50
-        batch_size = 50
+        batch_size = 10
         added_count = 0
         events_to_add = []
 
