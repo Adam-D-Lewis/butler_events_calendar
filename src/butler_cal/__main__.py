@@ -12,7 +12,7 @@ from butler_cal.gcal import (
 from butler_cal.scraper import (
     get_registered_scrapers,
     get_scraper,
-    scrape_utexas_calendar,
+    load_config,
 )
 
 
@@ -38,22 +38,6 @@ def main():
         help="List all available scrapers and exit",
     )
     parser.add_argument(
-        "--calendar-id",
-        help="Default Google Calendar ID to use (defaults to CALENDAR_ID environment variable)",
-    )
-    parser.add_argument(
-        "--calendar-mapping",
-        nargs="+",
-        metavar="SCRAPER:CALENDAR_ID",
-        help="Map scrapers to specific calendar IDs (e.g. 'ButlerMusic:calendar1@group.calendar.google.com' 'PflugervilleLibrary:calendar2@group.calendar.google.com')",
-    )
-    parser.add_argument(
-        "--category-mapping",
-        nargs="+",
-        metavar="CATEGORY:CALENDAR_ID",
-        help="Map categories to specific calendar IDs (e.g. 'Library Kids:kids@group.calendar.google.com' 'Library Adults:adults@group.calendar.google.com')",
-    )
-    parser.add_argument(
         "--days-back",
         type=int,
         default=7,
@@ -69,6 +53,10 @@ def main():
         "--dry-run",
         action="store_true",
         help="Show what events would be added/removed without making changes",
+    )
+    parser.add_argument(
+        "--config",
+        help="Path to the YAML configuration file",
     )
     args = parser.parse_args()
 
@@ -124,6 +112,9 @@ def main():
         delete_all_events(service, default_calendar_id)
         return
 
+    # Load configuration
+    config = load_config(args.config)
+
     # Determine which scrapers to use
     if args.scrapers:
         scrapers_to_use = args.scrapers
@@ -135,35 +126,31 @@ def main():
         raise Exception(
             "Error: No scrapers specified or found."
         )
-    else:
-        # Scrape events from all selected scrapers
-        events = []
-        for scraper_name in scrapers_to_use:
-            try:
-                logger.info(f"Scraping events using {scraper_name}...")
-                # Get calendar ID for this scraper if specified
-                scraper_calendar_id = scraper_calendar_mapping.get(scraper_name, default_calendar_id)
-                
-                # Initialize scraper with appropriate parameters
-                if scraper_name == "PflugervilleLibrary":
-                    scraper = get_scraper(scraper_name)(
-                        calendar_id=scraper_calendar_id,
-                        category_calendar_ids=category_calendar_mapping
-                    )
-                else:
-                    scraper = get_scraper(scraper_name)(calendar_id=scraper_calendar_id)
+        
+    # Merge command-line calendar mapping with config
+    for scraper_name in scrapers_to_use:
+        scraper_config = config.get(scraper_name, {})
+    
+    # Scrape events from all selected scrapers
+    events = []
+    for scraper_name in scrapers_to_use:
+        try:
+            logger.info(f"Scraping events using {scraper_name}...")
+            
+            # Initialize the scraper with loaded config
+            scraper = get_scraper(scraper_name, scraper_config)
+            
+            # Use date ranges from command-line arguments
+            start_date = datetime.now() - timedelta(days=args.days_back)
+            end_date = datetime.now() + timedelta(days=args.days_ahead)
 
-                # Use date ranges from command-line arguments
-                start_date = datetime.now() - timedelta(days=args.days_back)
-                end_date = datetime.now() + timedelta(days=args.days_ahead)
-
-                scraper_events = scraper.get_events(
-                    start_date=start_date, end_date=end_date
-                )
-                logger.info(f"Found {len(scraper_events)} events from {scraper_name}")
-                events.extend(scraper_events)
-            except Exception as e:
-                logger.error(f"Error using scraper {scraper_name}: {e}")
+            scraper_events = scraper.get_events(
+                start_date=start_date, end_date=end_date
+            )
+            logger.info(f"Found {len(scraper_events)} events from {scraper_name}")
+            events.extend(scraper_events)
+        except Exception as e:
+            logger.error(f"Error using scraper {scraper_name}: {e}")
 
     # Get existing events from the calendar
     # Look back 30 days and forward 180 days to cover all potential events
