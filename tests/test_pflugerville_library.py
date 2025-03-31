@@ -146,7 +146,7 @@ def test_pflugerville_library_init(mock_get_token, mock_token):
     mock_get_token.assert_called_once()
 
     # Verify scraper was initialized correctly
-    assert scraper.name == "PflugervilleLibraryScraper"
+    assert scraper.name == "PflugervilleLibrary"
     assert scraper.hcms_client_token == mock_token
     assert scraper.headers["Authorization"] == mock_token
     assert scraper.page_size == 50
