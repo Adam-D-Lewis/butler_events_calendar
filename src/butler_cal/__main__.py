@@ -103,12 +103,10 @@ def main():
         # Use all registered scrapers by default
         scrapers_to_use = list(get_registered_scrapers().keys())
 
-    # Default to ButlerMusicScraper for backward compatibility if no scrapers found
     if not scrapers_to_use:
-        logger.warning(
-            "No scrapers specified or found. Using legacy ButlerMusic scraper."
+        raise Exception(
+            "Error: No scrapers specified or found."
         )
-        events = scrape_utexas_calendar()
     else:
         # Scrape events from all selected scrapers
         events = []
