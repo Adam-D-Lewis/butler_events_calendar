@@ -121,7 +121,7 @@ def main():
                 category_calendar_mapping[parts[0]] = parts[1]
 
     if args.delete_all:
-        delete_all_events(service, calendar_id)
+        delete_all_events(service, default_calendar_id)
         return
 
     # Determine which scrapers to use
@@ -174,7 +174,7 @@ def main():
     existing_events_result = (
         service.events()
         .list(
-            calendarId=calendar_id,
+            calendarId=default_calendar_id,
             timeMin=time_min,
             timeMax=time_max,
             singleEvents=True,
