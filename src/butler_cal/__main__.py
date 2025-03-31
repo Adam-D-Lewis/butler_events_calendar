@@ -164,9 +164,10 @@ def sync(
                 key = (existing_event["summary"], existing_event["start"]["dateTime"])
                 existing_event_map[key] = existing_event["id"]
 
-        # Prepare batch request for new events
-        batch = service.new_batch_http_request()
+        # Process events in batches of 50
+        batch_size = 50
         added_count = 0
+        events_to_add = []
 
         for event in events:
             # Skip events missing required fields
@@ -206,20 +207,29 @@ def sync(
                     },
                 }
 
-                # Add to batch request
-                batch.add(service.events().insert(calendarId=calendar_id, body=event_body))
+                events_to_add.append(event_body)
                 logger.info(f"Queued event for addition: {event['summary']} to calendar {calendar_id}")
                 added_count += 1
             else:
                 logger.info(f"Event exists: {event['summary']}")
 
-        # Execute batch request if there are events to add and not in dry-run mode
+        # Process events in batches of 50
         if added_count > 0:
             if dry_run:
                 logger.info(f"Dry run: Would add {added_count} events to calendar")
             else:
-                logger.info(f"Adding {added_count} events in batch...")
-                batch.execute()
+                logger.info(f"Adding {added_count} events in batches of {batch_size}...")
+                
+                for i in range(0, len(events_to_add), batch_size):
+                    batch = service.new_batch_http_request()
+                    batch_events = events_to_add[i:i + batch_size]
+                    
+                    logger.info(f"Processing batch {i//batch_size + 1} with {len(batch_events)} events")
+                    
+                    for event_body in batch_events:
+                        batch.add(service.events().insert(calendarId=calendar_id, body=event_body))
+                    
+                    batch.execute()
 
         # Handle event deletion - we need to do this per calendar now
         if force_sync or added_count > 0:  # Sync if we added events or force_sync is True
