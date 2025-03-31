@@ -39,7 +39,19 @@ def main():
     )
     parser.add_argument(
         "--calendar-id",
-        help="Google Calendar ID to use (defaults to CALENDAR_ID environment variable)",
+        help="Default Google Calendar ID to use (defaults to CALENDAR_ID environment variable)",
+    )
+    parser.add_argument(
+        "--calendar-mapping",
+        nargs="+",
+        metavar="SCRAPER:CALENDAR_ID",
+        help="Map scrapers to specific calendar IDs (e.g. 'ButlerMusic:calendar1@group.calendar.google.com' 'PflugervilleLibrary:calendar2@group.calendar.google.com')",
+    )
+    parser.add_argument(
+        "--category-mapping",
+        nargs="+",
+        metavar="CATEGORY:CALENDAR_ID",
+        help="Map categories to specific calendar IDs (e.g. 'Library Kids:kids@group.calendar.google.com' 'Library Adults:adults@group.calendar.google.com')",
     )
     parser.add_argument(
         "--days-back",
@@ -84,13 +96,29 @@ def main():
     # Prepare Google Calendar service
     service = get_google_calendar_service()
 
-    # Get calendar ID from args or environment variable
-    calendar_id = args.calendar_id or os.environ.get("CALENDAR_ID")
-    if not calendar_id:
+    # Get default calendar ID from args or environment variable
+    default_calendar_id = args.calendar_id or os.environ.get("CALENDAR_ID")
+    if not default_calendar_id:
         logger.error(
-            "No calendar ID provided. Use --calendar-id or set the CALENDAR_ID environment variable."
+            "No default calendar ID provided. Use --calendar-id or set the CALENDAR_ID environment variable."
         )
         return
+
+    # Parse calendar mappings
+    scraper_calendar_mapping = {}
+    if args.calendar_mapping:
+        for mapping in args.calendar_mapping:
+            parts = mapping.split(":", 1)
+            if len(parts) == 2:
+                scraper_calendar_mapping[parts[0]] = parts[1]
+    
+    # Parse category mappings
+    category_calendar_mapping = {}
+    if args.category_mapping:
+        for mapping in args.category_mapping:
+            parts = mapping.split(":", 1)
+            if len(parts) == 2:
+                category_calendar_mapping[parts[0]] = parts[1]
 
     if args.delete_all:
         delete_all_events(service, calendar_id)
@@ -113,7 +141,17 @@ def main():
         for scraper_name in scrapers_to_use:
             try:
                 logger.info(f"Scraping events using {scraper_name}...")
-                scraper = get_scraper(scraper_name)
+                # Get calendar ID for this scraper if specified
+                scraper_calendar_id = scraper_calendar_mapping.get(scraper_name, default_calendar_id)
+                
+                # Initialize scraper with appropriate parameters
+                if scraper_name == "PflugervilleLibrary":
+                    scraper = get_scraper(scraper_name)(
+                        calendar_id=scraper_calendar_id,
+                        category_calendar_ids=category_calendar_mapping
+                    )
+                else:
+                    scraper = get_scraper(scraper_name)(calendar_id=scraper_calendar_id)
 
                 # Use date ranges from command-line arguments
                 start_date = datetime.now() - timedelta(days=args.days_back)
@@ -201,9 +239,12 @@ def main():
                 },
             }
 
+            # Determine which calendar to use for this event
+            event_calendar_id = event.get("calendar_id", default_calendar_id)
+            
             # Add to batch request
-            batch.add(service.events().insert(calendarId=calendar_id, body=event_body))
-            logger.info(f"Queued event for addition: {event['summary']}")
+            batch.add(service.events().insert(calendarId=event_calendar_id, body=event_body))
+            logger.info(f"Queued event for addition: {event['summary']} to calendar {event_calendar_id}")
             added_count += 1
         else:
             logger.info(f"Event exists: {event['summary']}")
@@ -216,7 +257,7 @@ def main():
             logger.info(f"Adding {added_count} events in batch...")
             batch.execute()
 
-    # Handle event deletion
+    # Handle event deletion - we need to do this per calendar now
     if args.sync or added_count > 0:  # Always sync if we added events
         if args.dry_run:
             # Just calculate what would be deleted
@@ -269,10 +310,23 @@ def main():
                 if len(events_to_delete) > 5:
                     logger.info(f"  ...and {len(events_to_delete) - 5} more")
         else:
-            # Actually delete events
-            deleted_count = delete_removed_events(service, calendar_id, events)
+            # Actually delete events - group by calendar_id
+            events_by_calendar = {}
+            for event in events:
+                cal_id = event.get("calendar_id", default_calendar_id)
+                if cal_id not in events_by_calendar:
+                    events_by_calendar[cal_id] = []
+                events_by_calendar[cal_id].append(event)
+            
+            # Delete events from each calendar
+            total_deleted = 0
+            for cal_id, cal_events in events_by_calendar.items():
+                deleted_count = delete_removed_events(service, cal_id, cal_events)
+                total_deleted += deleted_count
+                logger.info(f"Removed {deleted_count} events from calendar {cal_id}")
+            
             logger.info(
-                f"Calendar sync complete: {added_count} events added, {deleted_count} events removed"
+                f"Calendar sync complete: {added_count} events added, {total_deleted} events removed"
             )
 
 

@@ -9,8 +9,9 @@ from loguru import logger
 class CalendarScraper:
     """Base class for all calendar scrapers."""
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, calendar_id=None):
         self.name = name or self.__class__.__name__
+        self.calendar_id = calendar_id
 
     def get_events(self, start_date=None, end_date=None):
         """Retrieve events from calendar source.

@@ -13,8 +13,8 @@ from butler_cal.scraper import CalendarScraper, register_scraper
 class ButlerMusicScraper(CalendarScraper):
     """Scraper for Butler School of Music events."""
 
-    def __init__(self):
-        super().__init__(name="ButlerMusic")
+    def __init__(self, calendar_id=None):
+        super().__init__(name="ButlerMusic", calendar_id=calendar_id)
         self.base_url = "https://music.utexas.edu/events"
 
     def get_events(self, start_date=None, end_date=None):
@@ -244,6 +244,8 @@ class ButlerMusicScraper(CalendarScraper):
 
             # Only add events with a title
             if "summary" in event:
+                # Add calendar_id to the event
+                event["calendar_id"] = self.calendar_id
                 events.append(event)
 
         return events

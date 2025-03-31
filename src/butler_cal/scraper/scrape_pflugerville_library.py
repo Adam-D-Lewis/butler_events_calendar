@@ -19,8 +19,9 @@ class PflugervilleLibraryScraper(CalendarScraper):
     """Scraper for Pflugerville Library events."""
     TOKEN_URL = "https://www.pflugervilletx.gov/372/Library-Event-Calendar"
 
-    def __init__(self):
-        super().__init__(name="PflugervilleLibrary")
+    def __init__(self, calendar_id=None, category_calendar_ids=None):
+        super().__init__(name="PflugervilleLibrary", calendar_id=calendar_id)
+        self.category_calendar_ids = category_calendar_ids or {}
         self.base_url = "https://content.civicplus.com/api/content/tx-pflugerville/event"  # Base API URL
         self.hcms_client_token = self._get_token_from_html(self.TOKEN_URL)
         self.headers = {
@@ -233,6 +234,20 @@ class PflugervilleLibraryScraper(CalendarScraper):
             if "id" in event:
                 url = f"https://tx-pflugerville.civicplus.com/calendar.aspx?EID={event['id']}"
 
+            # Extract category information if available
+            categories = []
+            if "categories" in event:
+                for category in event.get("categories", []):
+                    if "name" in category:
+                        categories.append(category["name"])
+            
+            # Determine calendar_id based on category
+            target_calendar_id = self.calendar_id
+            for category in categories:
+                if category in self.category_calendar_ids:
+                    target_calendar_id = self.category_calendar_ids[category]
+                    break
+            
             # Create standardized event object
             return {
                 "summary": summary,
@@ -242,6 +257,8 @@ class PflugervilleLibraryScraper(CalendarScraper):
                 "location": location,
                 "url": url,
                 "source": "pflugerville_library",
+                "categories": categories,
+                "calendar_id": target_calendar_id
             }
         except (KeyError, ValueError) as e:
             logger.error(f"Error normalizing event: {e}")
