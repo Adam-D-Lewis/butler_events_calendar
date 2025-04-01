@@ -64,6 +64,6 @@ jobs:
 
       - name: Run butler_cal
         run: |
-          python -m butler_cal --config /opt/butler_cal/scraper_config.yaml --scrapers ButlerMusicScraper PflugervilleLibraryScraper
+          python -m butler_cal sync --config-path /opt/butler_cal/scraper_config.yaml --scrapers ButlerMusicScraper --scrapers PflugervilleLibraryScraper
         env:
           SA_CREDENTIALS: ${{ secrets.SA_CREDENTIALS }}
