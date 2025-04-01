@@ -1,7 +1,7 @@
 [project]
 name = "butler-cal"
 version = "0.5.0"
-description = "Scrape UT Calendar and update Google Calendar"
+description = "Scrape multiple event sources and update Google Calendar"
 authors = [
   { name = "Adam Lewis" }
 ]
@@ -17,12 +17,17 @@ dependencies = [
   "google-auth-oauthlib",
   "google-auth-httplib2",
   "loguru",
+  "pydantic>=2.0",
+  "typer",
+  "pyyaml",
 ]
 
 # optional dev dependencies
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-mock",
+  "responses",
   "mypy",
 ]
 
