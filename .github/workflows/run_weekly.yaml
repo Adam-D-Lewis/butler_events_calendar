@@ -40,9 +40,30 @@ jobs:
           python --version
           pip install -e .[dev]
 
+      - name: Create config file
+        run: |
+          # Create the directory
+          mkdir -p /opt/butler_cal
+
+          # Write the config file
+          cat <<EOF > /opt/butler_cal/scraper_config.yaml
+          ButlerMusicScraper:
+            calendar_id: 9c549885951b991005b185198abb5f7e9fb6ba8ca8aa17ff6c166b1611e7f0af@group.calendar.google.com
+
+          PflugervilleLibraryScraper:
+            default_calendar_id: 262af94f3687647bd2d32cb42daf8fc90efd41fedac5cbfc5af8e0c339d08ab2@group.calendar.google.com
+            category_calendar_id_map:
+              Library: 624db9732d0b691fbe6204f9dc034c1316af88249885c99c47563594b8375bef@group.calendar.google.com
+              Library Adults: c564684a6bab63a8c34e04623ce2fd3d2923b346c4fd88bb52ffc9055e9baf5f@group.calendar.google.com
+              Library Heritage House: 8f561b47740b57b6a5b32a3f71e371c0e7ca339ebbb19bc68c3f744bd424d8b0@group.calendar.google.com
+              Library Kids: bf33977cdb5a9d9c89b82a0e58f9f65c6218fd0c0cc57d17f0457528d5776adc@group.calendar.google.com
+              Library Senior: 9cf3ad7b4b9536bf3c5d7e0ec0836f8591ec9e02b43421bca387dfcf5cfa6b65@group.calendar.google.com
+              Library Teens: acd1cb558b56fac27eb4ffc907d8af4c3d757fe7e7a4ea60ff15dc5d3218070d@group.calendar.google.com
+              Library Tweens: c12c3074906ecdee821298e9fd312fdf676a9768dcfef63ec3a798a4f77cd81e@group.calendar.google.com
+          EOF
+
       - name: Run butler_cal
         run: |
-          python -m butler_cal
+          python -m butler_cal --config /opt/butler_cal/scraper_config.yaml --scrapers ButlerMusicScraper PflugervilleLibraryScraper
         env:
-            CALENDAR_ID: ${{ secrets.CALENDAR_ID }}
-            SA_CREDENTIALS: ${{ secrets.SA_CREDENTIALS }}
+          SA_CREDENTIALS: ${{ secrets.SA_CREDENTIALS }}

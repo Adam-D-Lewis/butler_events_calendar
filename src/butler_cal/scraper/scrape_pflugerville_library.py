@@ -1,16 +1,16 @@
 """Scraper for Pflugerville Library events."""
 
 import re
-from typing import Literal
 import warnings
-from datetime import datetime, timedelta
-
 from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Literal
 from zoneinfo import ZoneInfo
+
 import requests
 from loguru import logger
-from urllib3.exceptions import InsecureRequestWarning
 from pydantic import BaseModel, Field
+from urllib3.exceptions import InsecureRequestWarning
 
 from butler_cal.scraper import CalendarScraper, register_scraper
 
@@ -29,8 +29,7 @@ class PflugervilleLibraryScraperInput(BaseModel):
     """Input model for Pflugerville Library Scraper."""
 
     category_calendar_id_map: dict[str, str] = Field(
-        default_factory=dict,
-        description="Mapping of category names to calendar ids"
+        default_factory=dict, description="Mapping of category names to calendar ids"
     )
     default_calendar_id: str = Field(
         None, description="Default calendar ID for events without a specific category"
@@ -58,7 +57,7 @@ class PflugervilleLibraryScraper(CalendarScraper):
     # TODO: Add __repr__ showing input parameters
 
     def __init__(self, **kwargs):
-        super().__init__(name="PflugervilleLibraryScraper")
+        super().__init__()
         input = PflugervilleLibraryScraperInput(**kwargs)
         self.default_calendar_id = input.default_calendar_id
         self.category_calendar_id_map = input.category_calendar_id_map
@@ -92,7 +91,10 @@ class PflugervilleLibraryScraper(CalendarScraper):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
         }
         # In test mode, allow any URL that starts with https://example.com/
-        if not url.startswith("https://example.com/") and url != "https://www.pflugervilletx.gov/372/Library-Event-Calendar":
+        if (
+            not url.startswith("https://example.com/")
+            and url != "https://www.pflugervilletx.gov/372/Library-Event-Calendar"
+        ):
             raise ValueError(
                 "Invalid URL provided. Expected the library event calendar URL."
             )

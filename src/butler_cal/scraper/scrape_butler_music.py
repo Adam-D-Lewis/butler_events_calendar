@@ -1,6 +1,7 @@
 """Scraper for Butler School of Music events."""
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,10 +15,11 @@ class ButlerMusicScraper(CalendarScraper):
     """Scraper for Butler School of Music events."""
 
     def __init__(self, calendar_id=None):
-        super().__init__(name="ButlerMusic", calendar_id=calendar_id)
+        super().__init__(name="ButlerMusic")
+        self.calendar_id = calendar_id
         self.base_url = "https://music.utexas.edu/events"
 
-    def get_events(self, start_date=None, end_date=None):
+    def get_events(self, start_date=None, end_date=None) -> dict:
         """Scrape events from the Butler School of Music website.
 
         Args:
@@ -63,7 +65,7 @@ class ButlerMusicScraper(CalendarScraper):
                     try:
                         event_start = datetime.fromisoformat(
                             event["start"].replace("Z", "")
-                        )
+                        ).replace(tzinfo=ZoneInfo("America/Chicago"))
                     except (ValueError, TypeError):
                         continue
 
@@ -72,9 +74,9 @@ class ButlerMusicScraper(CalendarScraper):
                     and (not end_date or event_start <= end_date)
                 ):
                     filtered_events.append(event)
-            return filtered_events
+            return {self.calendar_id: filtered_events}
 
-        return events
+        return {self.calendar_id: events}
 
     def _scrape_butler_events(self, url):
         """Scrape events from the Butler School of Music website.

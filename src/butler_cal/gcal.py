@@ -158,24 +158,70 @@ def event_exists(service, calendar_id, event, debug=False):
     return len(existing_events) > 0
 
 
-def delete_all_events(service, calendar_id):
-    """Delete all events from the specified calendar."""
-    # Get all events
-    events_result = (
-        service.events().list(calendarId=calendar_id, maxResults=2500).execute()
-    )
-    events = events_result.get("items", [])
+def delete_all_events(service, calendar_id, batch_size=20):
+    """Delete all events from the specified calendar using batch requests."""
+    deleted_count = 0
+    page_token = None
+    first_iteration = True
 
-    if not events:
-        logger.info("No events found to delete.")
-        return
+    logger.info(f"Starting batch deletion for calendar: {calendar_id}")
 
-    # Delete each event
-    for event in events:
-        service.events().delete(calendarId=calendar_id, eventId=event["id"]).execute()
-        logger.info(f"Deleted event: {event.get('summary', 'Unnamed event')}")
+    while True:
+        # Get a batch of events (use larger size for first query to get a better count)
+        max_results = 2500 if first_iteration else batch_size
+        events_result = (
+            service.events()
+            .list(calendarId=calendar_id, maxResults=max_results, pageToken=page_token)
+            .execute()
+        )
 
-    logger.info(f"Successfully deleted {len(events)} events from the calendar.")
+        events = events_result.get("items", [])
+        if not events:
+            if deleted_count == 0:
+                logger.info("No events found to delete.")
+            break
+
+        # On first iteration, log the total events found
+        if first_iteration:
+            has_more = bool(events_result.get("nextPageToken"))
+            if has_more:
+                logger.info(
+                    f"Found at least {len(events)} events to delete (more exist)"
+                )
+            else:
+                logger.info(f"Found {len(events)} events to delete")
+            first_iteration = False
+
+        # Process in smaller batches if this is a large first batch
+        batch_chunks = [
+            events[i : i + batch_size] for i in range(0, len(events), batch_size)
+        ]
+        for chunk in batch_chunks:
+            # Create a batch request
+            batch = service.new_batch_http_request()
+
+            # Add each deletion to the batch
+            for event in chunk:
+                batch.add(
+                    service.events().delete(calendarId=calendar_id, eventId=event["id"])
+                )
+
+            # Execute the batch request
+            batch.execute()
+
+            # Update count and log progress
+            deleted_count += len(chunk)
+            logger.info(f"Deleted batch of {len(chunk)} events. Total: {deleted_count}")
+
+        # Get the next page token if any
+        page_token = events_result.get("nextPageToken")
+        if not page_token:
+            break
+
+    if deleted_count > 0:
+        logger.info(f"Successfully deleted {deleted_count} events from the calendar.")
+
+    return deleted_count
 
 
 def delete_removed_events(service, calendar_id, latest_events, time_window_days=30):

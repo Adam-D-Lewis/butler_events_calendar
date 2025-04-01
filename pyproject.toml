@@ -17,6 +17,9 @@ dependencies = [
   "google-auth-oauthlib",
   "google-auth-httplib2",
   "loguru",
+  "pydantic>=2.0",
+  "typer",
+  "pyyaml",
 ]
 
 # optional dev dependencies
