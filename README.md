@@ -54,47 +54,16 @@ python -m butler_cal --list-scrapers
 python -m butler_cal
 
 # Add events from specific scrapers
-python -m butler_cal --scrapers ButlerMusicScraper PflugervilleLibraryScraper
-
-# Sync calendar (add new events and remove events that no longer exist)
-python -m butler_cal --sync
+python -m butler_cal sync --scrapers ButlerMusicScraper --scrapers PflugervilleLibraryScraper
 
 # Delete all events from calendar
-python -m butler_cal --delete-all
+python -m butler_cal --delete-all \<calendar-id\>
 ```
-
-### Advanced Options
-
-```bash
-# Specify a different date range (90 days back, 180 days ahead)
-python -m butler_cal --days-back 90 --days-ahead 180
-
-# Specify a specific calendar ID
-python -m butler_cal --calendar-id "your_calendar_id@group.calendar.google.com"
-
-# Dry run (don't actually modify calendar)
-python -m butler_cal --dry-run --sync
-```
-
-### Command-Line Arguments
-
-| Argument | Description |
-|----------|-------------|
-| `--list-scrapers` | List all available scrapers and exit |
-| `--scrapers SCRAPER [SCRAPER ...]` | List of specific scrapers to use |
-| `--sync` | Sync calendar by removing events that no longer exist in the scraped sources |
-| `--delete-all` | Delete all events from the calendar |
-| `--calendar-id CALENDAR_ID` | Google Calendar ID to use (defaults to CALENDAR_ID environment variable) |
-| `--days-back DAYS_BACK` | Number of days in the past to fetch events (default: 7) |
-| `--days-ahead DAYS_AHEAD` | Number of days in the future to fetch events (default: 90) |
-| `--dry-run` | Show what events would be added/removed without making changes |
-| `--config CONFIG` | Path to the YAML configuration file (defaults to src/butler_cal/scraper_config.yaml) |
 
 ## Configuration
 
 ### Environment Variables
 
-- `CALENDAR_ID`: Google Calendar ID (if not specified with `--calendar-id`)
 - `SA_CREDENTIALS`: Service account credentials JSON (inline)
 - `SA_CREDENTIALS_PATH`: Path to service account credentials JSON file
 
@@ -127,9 +96,8 @@ This configuration lets you:
 3. Create a service account in the project
 4. Create service account credentials in GCP (JSON file)
 5. Share your target calendar with the service account email address
-6. Set the `CALENDAR_ID` environment variable to your calendar ID
-7. Set either `SA_CREDENTIALS` or `SA_CREDENTIALS_PATH` environment variable
-8. Run the script regularly via cron or other scheduling tool
+6. Set either `SA_CREDENTIALS` or `SA_CREDENTIALS_PATH` environment variable
+7. Run the script regularly via cron or other scheduling tool
 
 ## Adding Custom Scrapers
 
