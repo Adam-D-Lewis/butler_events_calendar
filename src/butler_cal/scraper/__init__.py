@@ -2,10 +2,8 @@ import abc
 import importlib
 import os
 import pkgutil
-from pydantic_settings import BaseSettings
-import yaml
-from pathlib import Path
 
+import yaml
 from loguru import logger
 
 
@@ -71,18 +69,20 @@ def get_registered_scrapers():
 
 def load_config(config_path=None):
     """Load configuration from a YAML file.
-    
+
     Args:
         config_path (str, optional): Path to the config file. If None, uses default location.
-        
+
     Returns:
         dict: Configuration dictionary
     """
     if config_path is None:
-        raise FileNotFoundError("No config path provided. Looking for default locations.")
-    
+        raise FileNotFoundError(
+            "No config path provided. Looking for default locations."
+        )
+
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         logger.info(f"Loaded configuration from {config_path}")
         return config
@@ -103,10 +103,9 @@ def get_scraper(name, scraper_config=None):
     """
     if name not in _registered_scrapers:
         raise ValueError(f"Scraper {name} not found")
-    
+
     scraper_class = _registered_scrapers[name]
-    
-        
+
     # Inspect the scraper class __init__ to determine what parameters it accepts
     # and pass the appropriate config
     try:
