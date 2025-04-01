@@ -3,7 +3,7 @@
 | Information | Links |
 | :---------- | :-----|
 | Last Successful Calendar Sync | [![Last Calendar Sync](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FAdam-D-Lewis%2Fbutler_events_calendar%2Factions%2Fworkflows%2F148948811%2Fruns%3Fquery%3Dbranch%253Amain%2Bis%253Asuccess%26per_page%3D1&query=%24.workflow_runs%5B0%5D.run_started_at&label=Date%3A&color=brightgreen)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/run_weekly.yaml?query=branch%3Amain+is%3Asuccess) |
-| CI | [![Tests](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml/badge.svg)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml) |
+| Code Test Status | [![Tests](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml/badge.svg)](https://github.com/Adam-D-Lewis/butler_events_calendar/actions/workflows/test.yaml) |
 
 This package scrapes multiple event sources and updates a Google Calendar with the events. Originally developed for the UT Austin Butler School of Music events, it now supports additional event sources including the Pflugerville Library.
 
