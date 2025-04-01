@@ -1,4 +1,4 @@
-# Multi-Source Event Calendar Scraper
+# Pflugerville, TX Area Event Calendar Scraper
 
 | Information | Links |
 | :---------- | :-----|
@@ -8,7 +8,7 @@
 This package scrapes multiple event sources and updates a Google Calendar with the events. Originally developed for the UT Austin Butler School of Music events, it now supports additional event sources including the Pflugerville Library.
 
 If you just want to subscribe to the calendar, log into your google account and then click the appropriate link.
-| Event |
+| Events Calendar |
 | :---- |
 | [UT Austin Butler School of Music](https://calendar.google.com/calendar/u/0?cid=OWM1NDk4ODU5NTFiOTkxMDA1YjE4NTE5OGFiYjVmN2U5ZmI2YmE4Y2E4YWExN2ZmNmMxNjZiMTYxMWU3ZjBhZkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) |
 | [Pflugerville Library Kids](https://calendar.google.com/calendar/embed?src=bf33977cdb5a9d9c89b82a0e58f9f65c6218fd0c0cc57d17f0457528d5776adc%40group.calendar.google.com&ctz=America%2FChicago) |
