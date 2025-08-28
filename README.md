@@ -130,6 +130,7 @@ MyCustomScraper:
   custom_setting: some_value
 ```
 
+
 Each event dictionary should have at minimum the following fields:
 - `summary`: Event title
 - `start`: Start time in ISO format
