@@ -26,12 +26,18 @@ class TestGcalFunctions(unittest.TestCase):
         self.start_datetime = datetime.datetime(2023, 1, 1, 10, 0, 0)
         self.end_datetime = datetime.datetime(2023, 1, 1, 12, 0, 0)
 
+    @patch("butler_cal.gcal.AuthorizedHttp")
+    @patch("butler_cal.gcal.httplib2.Http")
     @patch("butler_cal.gcal.get_service_account_credentials")
     @patch("butler_cal.gcal.build")
-    def test_get_google_calendar_service(self, mock_build, mock_get_credentials):
+    def test_get_google_calendar_service(
+        self, mock_build, mock_get_credentials, mock_http, mock_authorized_http
+    ):
         # Setup mocks
         mock_get_credentials.return_value = "mock_credentials"
         mock_build.return_value = "mock_service"
+        mock_http.return_value = "mock_http_client"
+        mock_authorized_http.return_value = "mock_authorized_http"
 
         # Test with default setup
         service = get_google_calendar_service()
@@ -39,8 +45,16 @@ class TestGcalFunctions(unittest.TestCase):
         # Verify the credentials function was called
         mock_get_credentials.assert_called_once()
 
-        # Verify the build function was called with correct parameters
-        mock_build.assert_called_with("calendar", "v3", credentials="mock_credentials")
+        # Verify HTTP client was created with timeout
+        mock_http.assert_called_once_with(timeout=300)
+
+        # Verify AuthorizedHttp was created with credentials and http client
+        mock_authorized_http.assert_called_once_with(
+            "mock_credentials", http="mock_http_client"
+        )
+
+        # Verify the build function was called with http parameter
+        mock_build.assert_called_with("calendar", "v3", http="mock_authorized_http")
 
         # Verify the service was returned correctly
         self.assertEqual(service, "mock_service")
@@ -134,7 +148,7 @@ class TestGcalFunctions(unittest.TestCase):
 
         result = event_exists(self.mock_service, self.calendar_id, event_dict)
         self.assertFalse(result)
-        
+
     def test_delete_removed_events(self):
         # Setup mock for list events
         mock_events_result = {
@@ -157,11 +171,11 @@ class TestGcalFunctions(unittest.TestCase):
             ]
         }
         self.mock_events.list.return_value.execute.return_value = mock_events_result
-        
+
         # Mock delete event
         mock_delete = MagicMock()
         self.mock_events.delete.return_value = mock_delete
-        
+
         # Create scraped events (only 2 of the 3 events remain)
         scraped_events = [
             {
@@ -173,24 +187,24 @@ class TestGcalFunctions(unittest.TestCase):
                 "start": "2023-01-03T12:00:00-06:00",
             },
         ]
-        
+
         # Call the function
         result = delete_removed_events(
             self.mock_service, self.calendar_id, scraped_events
         )
-        
+
         # Verify results
         self.assertEqual(result, 1)  # One event should be deleted
-        
+
         # Verify the correct event was deleted
         self.mock_events.delete.assert_called_once_with(
             calendarId=self.calendar_id, eventId="event2"
         )
-        
+
         # Test with no events to delete
         # Reset mocks
         self.mock_events.delete.reset_mock()
-        
+
         # Now all calendar events are in scraped events
         scraped_events = [
             {
@@ -206,12 +220,12 @@ class TestGcalFunctions(unittest.TestCase):
                 "start": "2023-01-03T12:00:00-06:00",
             },
         ]
-        
+
         # Call the function again
         result = delete_removed_events(
             self.mock_service, self.calendar_id, scraped_events
         )
-        
+
         # Verify results
         self.assertEqual(result, 0)  # No events should be deleted
         self.mock_events.delete.assert_not_called()

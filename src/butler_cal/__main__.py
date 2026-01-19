@@ -12,6 +12,7 @@ from butler_cal.gcal import (
     delete_removed_events,
     get_google_calendar_service,
 )
+from butler_cal.retry import gcal_retry
 from butler_cal.scraper import (
     get_registered_scrapers,
     get_scraper,
@@ -260,34 +261,50 @@ def _prepare_events_to_add(events, existing_event_map, calendar_id):
     return events_to_add, added_count
 
 
-def _add_events_in_batches(service, calendar_id, events_to_add, batch_size=50):
-    """Add events to the calendar in batches.
+def _add_events_in_batches(service, calendar_id, events_to_add, batch_size=25):
+    """Add events to the calendar in batches with retry logic.
 
     Args:
         service: Google Calendar service
         calendar_id: Calendar ID to add events to
         events_to_add: List of events to add
-        batch_size: Size of each batch
+        batch_size: Size of each batch (default 25 for reliability)
 
     Returns:
         int: Number of events added
     """
     logger.info(f"Adding {len(events_to_add)} events in batches of {batch_size}...")
+    total_batches = (len(events_to_add) + batch_size - 1) // batch_size
 
     for i in range(0, len(events_to_add), batch_size):
-        batch = service.new_batch_http_request()
         batch_events = events_to_add[i : i + batch_size]
+        batch_num = i // batch_size + 1
 
         logger.info(
-            f"Processing batch {i//batch_size + 1} with {len(batch_events)} events"
+            f"Processing batch {batch_num}/{total_batches} with {len(batch_events)} events"
         )
 
-        for event_body in batch_events:
-            batch.add(service.events().insert(calendarId=calendar_id, body=event_body))
-
-        batch.execute()
+        _execute_batch_with_retry(service, calendar_id, batch_events)
 
     return len(events_to_add)
+
+
+@gcal_retry
+def _execute_batch_with_retry(service, calendar_id, batch_events):
+    """Execute a batch of event insertions with retry logic.
+
+    Args:
+        service: Google Calendar service
+        calendar_id: Calendar ID to add events to
+        batch_events: List of events for this batch
+    """
+    batch = service.new_batch_http_request()
+
+    for event_body in batch_events:
+        batch.add(service.events().insert(calendarId=calendar_id, body=event_body))
+
+    batch.execute()
+    logger.info(f"Successfully added {len(batch_events)} events")
 
 
 def _calculate_events_to_delete(existing_events, events):

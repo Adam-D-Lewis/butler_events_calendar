@@ -2,9 +2,13 @@ import datetime
 import json
 import os
 
+import httplib2
 from google.oauth2 import service_account
+from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from loguru import logger
+
+from butler_cal.retry import gcal_retry
 
 
 def get_service_account_credentials():
@@ -37,12 +41,19 @@ def get_service_account_credentials():
     return credentials
 
 
-def get_google_calendar_service():
-    """Get an authorized Google Calendar API service instance using service account."""
+def get_google_calendar_service(timeout=300):
+    """Get an authorized Google Calendar API service instance using service account.
 
+    Args:
+        timeout: HTTP timeout in seconds (default 300 = 5 minutes)
+    """
     credentials = get_service_account_credentials()
 
-    service = build("calendar", "v3", credentials=credentials)
+    # Create HTTP client with longer timeout for batch operations
+    http = httplib2.Http(timeout=timeout)
+    authorized_http = AuthorizedHttp(credentials, http=http)
+
+    service = build("calendar", "v3", http=authorized_http)
     return service
 
 
@@ -158,6 +169,23 @@ def event_exists(service, calendar_id, event, debug=False):
     return len(existing_events) > 0
 
 
+@gcal_retry
+def _execute_delete_batch_with_retry(service, calendar_id, events_chunk):
+    """Execute a batch of event deletions with retry logic.
+
+    Args:
+        service: Google Calendar service
+        calendar_id: Calendar ID to delete events from
+        events_chunk: List of events to delete in this batch
+    """
+    batch = service.new_batch_http_request()
+
+    for event in events_chunk:
+        batch.add(service.events().delete(calendarId=calendar_id, eventId=event["id"]))
+
+    batch.execute()
+
+
 def delete_all_events(service, calendar_id, batch_size=20):
     """Delete all events from the specified calendar using batch requests."""
     deleted_count = 0
@@ -197,17 +225,7 @@ def delete_all_events(service, calendar_id, batch_size=20):
             events[i : i + batch_size] for i in range(0, len(events), batch_size)
         ]
         for chunk in batch_chunks:
-            # Create a batch request
-            batch = service.new_batch_http_request()
-
-            # Add each deletion to the batch
-            for event in chunk:
-                batch.add(
-                    service.events().delete(calendarId=calendar_id, eventId=event["id"])
-                )
-
-            # Execute the batch request
-            batch.execute()
+            _execute_delete_batch_with_retry(service, calendar_id, chunk)
 
             # Update count and log progress
             deleted_count += len(chunk)

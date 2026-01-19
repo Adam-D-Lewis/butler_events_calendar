@@ -20,6 +20,7 @@ dependencies = [
   "pydantic>=2.0",
   "typer",
   "pyyaml",
+  "tenacity>=8.0",
 ]
 
 # optional dev dependencies
